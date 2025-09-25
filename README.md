@@ -13,11 +13,10 @@
 
 **GitHub Repository URL:** https://github.com/ese5180/iot-venture-f25-helldivers.git
 
-## Concept Development (zyh)
-
+## Concept Development 
 horse
 
-### Product Function
+### 3.2.2 Product Function (wzy)
 
 1.temperate
 2.moisture
@@ -25,15 +24,15 @@ horse
 
 4.balance
 
-### Target Market & Demographics (wzy)
+### 3.2.3 Target Market & Demographics (wzy)
 
-### Stakeholders (czh,zyh)
+### 3.2.4 Stakeholders (czh,zyh)
 
-### System-Level Diagrams (dlh)
+### 3.2.5 System-Level Diagrams (dlh)
 
-### Security Requirements Specification
+### 3.2.6 Security Requirements Specification zyh
 
-### Hardware Requirements Specification
+### 3.2.7 Hardware Requirements Specification zyh
 
 
-### Software Requirements Specification
+### 3.2.8 Software Requirements Specification dlh
