@@ -6,7 +6,7 @@
 
 | Team Member Name |     Email Address     |
 |------------------|-----------------------|
-| [Name 1]         | [Email 1]             |
+| Linhai Deng         | linhaid@seas.upenn.edu             |
 | Zhongyu wang     |zhongyuw@seas.upenn.edu|
 | [Name 3]         | [Email 3]             |
 | [Name 4]         | [Email 4]             |
