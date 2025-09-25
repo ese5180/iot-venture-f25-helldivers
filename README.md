@@ -11,17 +11,25 @@
 | [Name 3]         | [Email 3]             |
 | [Name 4]         | [Email 4]             |
 
-**GitHub Repository URL:**
+**GitHub Repository URL:** https://github.com/ese5180/iot-venture-f25-helldivers.git
 
-## Concept Development
+## Concept Development (zyh)
+
+horse
 
 ### Product Function
 
-### Target Market & Demographics
+1.temperate
+2.moisture
+3.location(gps)
 
-### Stakeholders
+4.balance
 
-### System-Level Diagrams
+### Target Market & Demographics (wzy)
+
+### Stakeholders (czh,zyh)
+
+### System-Level Diagrams (dlh)
 
 ### Security Requirements Specification
 
