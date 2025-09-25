@@ -4,12 +4,12 @@
 
 **Team Name:** 
 
-| Team Member Name | Email Address       |
-|------------------|---------------------|
-| [Name 1]         | [Email 1]           |
-| [Name 2]         | [Email 2]           |
-| [Name 3]         | [Email 3]           |
-| [Name 4]         | [Email 4]           |
+| Team Member Name |     Email Address     |
+|------------------|-----------------------|
+| [Name 1]         | [Email 1]             |
+| Zhongyu wang     |zhongyuw@seas.upenn.edu|
+| [Name 3]         | [Email 3]             |
+| [Name 4]         | [Email 4]             |
 
 **GitHub Repository URL:**
 
@@ -26,5 +26,6 @@
 ### Security Requirements Specification
 
 ### Hardware Requirements Specification
+
 
 ### Software Requirements Specification
