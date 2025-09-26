@@ -18,9 +18,7 @@ horse
 
 ### 3.2.2 Product Function (wzy)
 
-1.temperate
-2.moisture
-3.location(gps)
+Our product is a wearable IoT device for horses that integrates GPS tracking, temperature and humidity monitoring, and gait/balance sensing. It helps prevent horses from getting lost, detects early signs of illness by monitoring environmental and physiological conditions, and provides alerts for potential hoof or leg issues. The device enables real-time monitoring for owners, trainers, and veterinarians.
 
 4.balance, 
 
@@ -55,5 +53,6 @@ SRS 03 – The host software will synchronize data from 4 legs and compute relat
 SRS 04 – The system will generate alerts if any leg shows abnormal vibration amplitude or asymmetry > X mm threshold.
 
 SRS 05 – All data will be logged with timestamps in a database for later analysis.
+
 
 SRS 06 – The user interface will provide real-time visualization of leg movement and health parameters on a PC dashboard.
