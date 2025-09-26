@@ -24,15 +24,22 @@ Our product is a wearable IoT device for horses that integrates GPS tracking, te
 
 1. Who will be using your product?
 
-
+- Horse owners, stable managers, trainers, and veterinarians who need live monitoring of their animals’ safety, health, and locomotion.  
+- Users of livestock monitoring and animal wearable technologies — and those already interested in [pet wearables](https://www.grandviewresearch.com/industry-analysis/pet-wearable-market) — are part of the adjacent user base.  
+- Equine-focused sports professionals (e.g., horse racing and equestrian teams) will be core users.  
 
 2. Who will be purchasing your product?
 
-
+- Individual horse owners, equestrian clubs, ranches, and breeding farms.  
+- Veterinary clinics and equine hospitals.  
+- Professional stables and racecourse facilities.  
+- Potential B2B customers, such as agricultural tech companies deploying large-scale [livestock monitoring](https://www.grandviewresearch.com/industry-analysis/livestock-monitoring-market) solutions.  
 
 3. Where in the world (or space!) would you deploy your product?
 
-
+- Initial deployment: the United States and Europe, where horse ownership, equestrian culture, and racing industries are already established.  
+- Expansion markets: Asia (China, Japan, South Korea, India), the Middle East (Saudi Arabia, UAE), and Australia — all regions with strong horse racing and breeding traditions.  
+- According to [Market Intelo](https://marketintelo.com/report/equine-gps-trackers-market/amp), the equine GPS tracker market is projected to grow significantly worldwide, and [Yahoo Finance](https://finance.yahoo.com/news/equine-healthcare-market-research-forecast-142500533.html) reports strong growth in equine healthcare demand, supporting global adoption potential.
 
 4. How large is the market you’re targeting, in US dollars?
 
@@ -44,12 +51,17 @@ Although that number largely covers tack, saddles, and protective gear, it demon
 
 5. How much of that market do you expect to capture, in US dollars?
 
-
+Combining these references, we estimate a TAM between USD 200–400 million for a connected equine monitoring product. If we aim to capture 2–3% in early stages, that corresponds to USD 4–12 million potential revenue.
 
 6. What competitors are already in the space?
 
+- [Nightwatch Smart Halter](https://www.smarthalter.com/?srsltid=AfmBOorbEuz4P-iUAZ0rSBhKH2UQfeXk0QQ2rZYL_pUpbizwPAAS-Ua6) – monitors equine vital signs and stress levels, with automated alerts.  
+- [Trackener Life](https://www.veterinary-practice.com/article/an-innovative-tracker-for-equines) – provides GPS tracking and behavior monitoring.  
+- SeeHorse – offers health-focused wearable monitoring for horses.  
+- [Equimetrics](https://www.equimetrics.ie/) – combines physiological monitoring with GPS for equestrian performance.  
+- [Equestic SaddleClip](https://www.equestic.com/product/clip/) – tracks gait and performance metrics for training.
 
-
+**Differentiator:** None of these competitors combine **GPS tracking, environmental monitoring, and gait/balance detection** in a single integrated system, which is our unique advantage.  
 
 ### 3.2.4 Stakeholders (czh,zyh)
 
@@ -83,6 +95,7 @@ SRS 05 – All data will be logged with timestamps in a database for later analy
 
 
 SRS 06 – The user interface will provide real-time visualization of leg movement and health parameters on a PC dashboard.
+
 
 
 
