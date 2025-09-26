@@ -57,7 +57,6 @@ Combining these references, we estimate a TAM between USD 200–400 million for 
 
 - [Nightwatch Smart Halter](https://www.smarthalter.com/?srsltid=AfmBOorbEuz4P-iUAZ0rSBhKH2UQfeXk0QQ2rZYL_pUpbizwPAAS-Ua6) – monitors equine vital signs and stress levels, with automated alerts.  
 - [Trackener Life](https://www.veterinary-practice.com/article/an-innovative-tracker-for-equines) – provides GPS tracking and behavior monitoring.  
-- SeeHorse – offers health-focused wearable monitoring for horses.  
 - [Equimetrics](https://www.equimetrics.ie/) – combines physiological monitoring with GPS for equestrian performance.  
 - [Equestic SaddleClip](https://www.equestic.com/product/clip/) – tracks gait and performance metrics for training.
 
@@ -152,6 +151,7 @@ SRS 05 – All data will be logged with timestamps in a database for later analy
 
 
 SRS 06 – The user interface will provide real-time visualization of leg movement and health parameters on a PC dashboard.
+
 
 
 
