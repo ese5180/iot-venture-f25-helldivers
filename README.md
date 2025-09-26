@@ -22,6 +22,31 @@ Our product is a wearable IoT device for horses that integrates GPS tracking, te
 
 ### 3.2.3 Target Market & Demographics (wzy)
 
+1. Who will be using your product?
+
+
+
+2. Who will be purchasing your product?
+
+
+
+3. Where in the world (or space!) would you deploy your product?
+
+
+
+4. How large is the market you’re targeting, in US dollars?
+
+The global equine GPS tracker market is [USD $304M (2024)](https://marketintelo.com/report/equine-gps-trackers-market/amp).
+
+5. How much of that market do you expect to capture, in US dollars?
+
+
+
+6. What competitors are already in the space?
+
+
+
+
 ### 3.2.4 Stakeholders (czh,zyh)
 
 ### 3.2.5 System-Level Diagrams (dlh)
@@ -54,4 +79,5 @@ SRS 05 – All data will be logged with timestamps in a database for later analy
 
 
 SRS 06 – The user interface will provide real-time visualization of leg movement and health parameters on a PC dashboard.
+
 
