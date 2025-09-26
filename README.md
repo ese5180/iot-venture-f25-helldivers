@@ -20,8 +20,6 @@ horse
 
 Our product is a wearable IoT device for horses that integrates GPS tracking, temperature and humidity monitoring, and gait/balance sensing. It helps prevent horses from getting lost, detects early signs of illness by monitoring environmental and physiological conditions, and provides alerts for potential hoof or leg issues. The device enables real-time monitoring for owners, trainers, and veterinarians.
 
-4.balance, 
-
 ### 3.2.3 Target Market & Demographics (wzy)
 
 ### 3.2.4 Stakeholders (czh,zyh)
@@ -56,3 +54,4 @@ SRS 05 – All data will be logged with timestamps in a database for later analy
 
 
 SRS 06 – The user interface will provide real-time visualization of leg movement and health parameters on a PC dashboard.
+
