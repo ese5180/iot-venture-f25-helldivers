@@ -65,6 +65,42 @@ Combining these references, we estimate a TAM between USD 200–400 million for 
 
 ### 3.2.4 Stakeholders (czh,zyh)
 
+# Stakeholder Interview — Shadow Creek Farm
+
+## Interview Information
+
+- **Farm name:** Shadow Creek Farm – Ridley Creek  
+- **Location:** Glen Mills, Pennsylvania, USA  
+- **Phone:** (484) 301-0560  
+- **Type:** Horse facility (boarding, show training)  
+- **Google rating:** 4.7 ★ (71 reviews)
+
+---
+
+## Interview Summary
+
+### How many horses do you have right now, and what do you mainly use them for — racing, training, or just riding?
+They currently have about 65 horses at the farm. Most are used for show training and boarding — other people board their own horses there for care.
+
+### How do you usually keep track of where your horses are and check their health — GPS, just watching them, or something else?
+They manually count the horses every time. The farm also partners with a nearby clinic to do regular weekly health checks. When asked what daily health factors they pay most attention to, they said the most important is **water intake**, followed by **sleep quality**.
+
+### Have you ever had a horse get lost, hurt, or sick and found out too late? Could you tell me about one time?
+Never — it has never happened. They emphasized that horses are very valuable animals, so they are very careful.
+
+### If there was a device that could track your horse’s location, body temperature, humidity, and leg issues in real time, which features would be most useful for you?
+They mentioned that in Florida there have been cases of horses being stolen at night and sold illegally for meat. However, they feel such a device may not need to be running 24/7; constant monitoring might not be necessary.
+
+### When picking this kind of device, what matters most to you — price, battery life, comfort for the horse, accuracy, or easy phone access?
+Easy access through a phone app is the most important, followed by **battery life**. They also noted that in areas with hurricanes, the device should consider extreme weather conditions.
+
+### Would you want to share this data with vets or trainers? Do you have any privacy concerns about it?
+They think privacy and security are very important in rural areas — people generally don’t want to share their personal information or have outsiders know about their property and animals.
+
+### How much would you be willing to pay for something like this? Would you rather pay once or pay a subscription?
+It depends on the pricing. They prefer a **monthly subscription at first** to try it out. If the device proves useful, they would like the option to switch to a **lifetime purchase with a discount**. Paying a few hundred dollars upfront for something uncertain would feel too risky.
+
+
 ### 3.2.5 System-Level Diagrams (dlh)
 ![sys](images/sys.png)
 ### 3.2.6 Security Requirements Specification zyh
