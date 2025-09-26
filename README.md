@@ -21,6 +21,7 @@ horse
 1.temperate
 2.moisture
 3.location(gps)
+
 4.balance
 
 ### 3.2.3 Target Market & Demographics (wzy)
