@@ -16,11 +16,11 @@
 ## Concept Development 
 horse
 
-### 3.2.2 Product Function (wzy)
+### 3.2.2 Product Function
 
 Our product is a wearable IoT device for horses that integrates GPS tracking, temperature and humidity monitoring, and gait/balance sensing. It helps prevent horses from getting lost, detects early signs of illness by monitoring environmental and physiological conditions, and provides alerts for potential hoof or leg issues. The device enables real-time monitoring for owners, trainers, and veterinarians.
 
-### 3.2.3 Target Market & Demographics (wzy)
+### 3.2.3 Target Market & Demographics
 
 1. Who will be using your product?
 
@@ -62,7 +62,7 @@ Combining these references, we estimate a TAM between USD 200–400 million for 
 
 **Differentiator:** None of these competitors combine **GPS tracking, environmental monitoring, and gait/balance detection** in a single integrated system, which is our unique advantage.  
 
-### 3.2.4 Stakeholders (czh,zyh)
+### 3.2.4 Stakeholders
 
 ## Interview Information
 
@@ -98,7 +98,7 @@ They think privacy and security are very important in rural areas — people gen
 It depends on the pricing. They prefer a **monthly subscription at first** to try it out. If the device proves useful, they would like the option to switch to a **lifetime purchase with a discount**. Paying a few hundred dollars upfront for something uncertain would feel too risky.
 
 
-### 3.2.5 System-Level Diagrams (dlh)
+### 3.2.5 System-Level Diagrams
 ![sys](images/sys.png)
 ### 3.2.6 Security Requirements Specification 
 #### Overview
@@ -151,6 +151,7 @@ SRS 05 – All data will be logged with timestamps in a database for later analy
 
 
 SRS 06 – The user interface will provide real-time visualization of leg movement and health parameters on a PC dashboard.
+
 
 
 
