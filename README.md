@@ -9,7 +9,7 @@
 | Linhai Deng         | linhaid@seas.upenn.edu             |
 | Zhongyu wang     |zhongyuw@seas.upenn.edu|
 | Zihao Cai        |zihaocai@seas.upenn.edu|
-| [Name 4]         | [Email 4]             |
+| Yuhe Zhang         |yz016@seas.upenn.edu|
 
 **GitHub Repository URL:** https://github.com/ese5180/iot-venture-f25-helldivers.git
 
@@ -101,10 +101,33 @@ It depends on the pricing. They prefer a **monthly subscription at first** to tr
 
 ### 3.2.5 System-Level Diagrams (dlh)
 ![sys](images/sys.png)
-### 3.2.6 Security Requirements Specification zyh
+### 3.2.6 Security Requirements Specification 
+#### Overview
+The system will handle sensitive data about horse location, health, and owner property. Security is critical to ensure data integrity, confidentiality, and protection against tampering.
 
-### 3.2.7 Hardware Requirements Specification zyh
+#### Functionality
 
+SEC 01 – All wireless communication (BLE/Wi-Fi) shall be encrypted using industry-standard protocols (e.g., AES-128 or higher).
+
+SEC 02 – User and animal identifiable data shall not be transmitted or stored in plain text.
+
+SEC 03 – The system shall authenticate devices before accepting data, ignoring messages from unregistered or tampered nodes.
+
+SEC 04 – All sensitive information (keys, credentials) shall be stored in a secure hardware region on the Nordic microcontroller.
+
+### 3.2.7 Hardware Requirements Specification
+#### Overview
+The device must be lightweight, durable, and capable of continuous operation in outdoor equestrian environments. Hardware components will support real-time sensing, wireless communication, and energy-efficient power management.
+
+#### Functionality
+
+HRS 01 – The system shall be based on a Nordic microcontroller (e.g., nRF52840) to ensure Zephyr RTOS compatibility.
+
+HRS 02 – The hardware shall include GPS, IMU (accelerometer + gyroscope), temperature/humidity sensor, and optional ToF module for leg movement monitoring.
+
+HRS 03 – The device shall be powered by a rechargeable Li-Po battery with >24 hours continuous operation, with optional solar trickle charging for extended use.
+
+HRS 04 – The enclosure shall be weather-resistant (IP65 or higher), lightweight (<300 g), and safe for equine wear without causing discomfort.
 
 ### 3.2.8 Software Requirements Specification 
 
