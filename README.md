@@ -65,8 +65,6 @@ Combining these references, we estimate a TAM between USD 200–400 million for 
 
 ### 3.2.4 Stakeholders (czh,zyh)
 
-# Stakeholder Interview — Shadow Creek Farm
-
 ## Interview Information
 
 - **Farm name:** Shadow Creek Farm – Ridley Creek  
