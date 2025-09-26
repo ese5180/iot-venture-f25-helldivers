@@ -8,7 +8,7 @@
 |------------------|-----------------------|
 | Linhai Deng         | linhaid@seas.upenn.edu             |
 | Zhongyu wang     |zhongyuw@seas.upenn.edu|
-| [Name 3]         | [Email 3]             |
+| Zihao Cai        |zihaocai@seas.upenn.edu|
 | [Name 4]         | [Email 4]             |
 
 **GitHub Repository URL:** https://github.com/ese5180/iot-venture-f25-helldivers.git
@@ -22,7 +22,7 @@ horse
 2.moisture
 3.location(gps)
 
-4.balance
+4.balance, 
 
 ### 3.2.3 Target Market & Demographics (wzy)
 
