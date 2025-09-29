@@ -2,7 +2,9 @@
 # IoT Venture Pitch
 ## ESE5180: IoT Wireless, Security, & Scaling
 
-**Team Name:** 
+**Team Name: Helldivers** 
+
+**Team Number:** 
 
 | Team Member Name |     Email Address     |
 |------------------|-----------------------|
@@ -151,6 +153,7 @@ SRS 05 – All data will be logged with timestamps in a database for later analy
 
 
 SRS 06 – The user interface will provide real-time visualization of leg movement and health parameters on a PC dashboard.
+
 
 
 
