@@ -4,7 +4,7 @@
 
 **Team Name: Helldivers** 
 
-**Team Number:** 
+**Team Number: 3** 
 
 | Team Member Name |     Email Address     |
 |------------------|-----------------------|
@@ -153,6 +153,7 @@ SRS 05 – All data will be logged with timestamps in a database for later analy
 
 
 SRS 06 – The user interface will provide real-time visualization of leg movement and health parameters on a PC dashboard.
+
 
 
 
