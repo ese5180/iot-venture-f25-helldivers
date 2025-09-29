@@ -45,10 +45,10 @@ Our product is a wearable IoT device for horses that integrates GPS tracking, te
 
 4. How large is the market you’re targeting, in US dollars?
 
-According to [Grand View Research](https://www.grandviewresearch.com/industry-analysis/livestock-monitoring-market), the global livestock monitoring market is projected at **USD 5.18 billion in 2024**.  
+According to [Livestock Monitoring Marke](https://www.grandviewresearch.com/industry-analysis/livestock-monitoring-market), the global livestock monitoring market is projected at **USD 5.18 billion in 2024**.  
 Because our product combines GPS, health/environmental sensing, and gait/balance analytics specifically for horses, we conservatively assume that the equine segment accounts for ~5% of that, giving an addressable market of **USD ~259 million**.
 
-Additionally, the global horse riding equipment market is estimated at **USD 1.60 billion in 2023** ([Grand View Research](https://www.grandviewresearch.com/industry-analysis/horse-riding-equipment-market-report)).  
+Additionally, the global horse riding equipment market is estimated at **USD 1.60 billion in 2023** ([Horse Riding Equipment Market](https://www.grandviewresearch.com/industry-analysis/horse-riding-equipment-market-report)).  
 Although that number largely covers tack, saddles, and protective gear, it demonstrates that there is already significant spending in the equestrian domain.
 
 5. How much of that market do you expect to capture, in US dollars?
@@ -153,6 +153,7 @@ SRS 05 – All data will be logged with timestamps in a database for later analy
 
 
 SRS 06 – The user interface will provide real-time visualization of leg movement and health parameters on a PC dashboard.
+
 
 
 
