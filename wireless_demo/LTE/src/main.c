@@ -24,8 +24,8 @@
 
 LOG_MODULE_REGISTER(at_client_offline, LOG_LEVEL_INF);
 
-#define SERVER_ADDR "192.168.1.10"   // ← 改成你的主机 IP
-#define SERVER_PORT 9000             // ← 改成你的主机监听端口
+#define SERVER_ADDR "20.55.16.155"   //  IP
+#define SERVER_PORT 1880             
 
 void main(void)
 {
