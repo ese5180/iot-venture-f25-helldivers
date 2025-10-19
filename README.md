@@ -2,7 +2,9 @@
 # IoT Venture Pitch
 ## ESE5180: IoT Wireless, Security, & Scaling
 
-**Team Name:** 
+**Team Name: Helldivers** 
+
+**Team Number: 3** 
 
 | Team Member Name |     Email Address     |
 |------------------|-----------------------|
@@ -16,11 +18,11 @@
 ## Concept Development 
 horse
 
-### 3.2.2 Product Function (wzy)
+### 3.2.2 Product Function
 
 Our product is a wearable IoT device for horses that integrates GPS tracking, temperature and humidity monitoring, and gait/balance sensing. It helps prevent horses from getting lost, detects early signs of illness by monitoring environmental and physiological conditions, and provides alerts for potential hoof or leg issues. The device enables real-time monitoring for owners, trainers, and veterinarians.
 
-### 3.2.3 Target Market & Demographics (wzy)
+### 3.2.3 Target Market & Demographics
 
 1. Who will be using your product?
 
@@ -43,10 +45,10 @@ Our product is a wearable IoT device for horses that integrates GPS tracking, te
 
 4. How large is the market you’re targeting, in US dollars?
 
-According to [Grand View Research](https://www.grandviewresearch.com/industry-analysis/livestock-monitoring-market), the global livestock monitoring market is projected at **USD 5.18 billion in 2024**.  
+According to [Livestock Monitoring Market](https://www.grandviewresearch.com/industry-analysis/livestock-monitoring-market), the global livestock monitoring market is projected at **USD 5.18 billion in 2024**.  
 Because our product combines GPS, health/environmental sensing, and gait/balance analytics specifically for horses, we conservatively assume that the equine segment accounts for ~5% of that, giving an addressable market of **USD ~259 million**.
 
-Additionally, the global horse riding equipment market is estimated at **USD 1.60 billion in 2023** ([Grand View Research](https://www.grandviewresearch.com/industry-analysis/horse-riding-equipment-market-report)).  
+Additionally, the global horse riding equipment market is estimated at **USD 1.60 billion in 2023** ([Horse Riding Equipment Market](https://www.grandviewresearch.com/industry-analysis/horse-riding-equipment-market-report)).  
 Although that number largely covers tack, saddles, and protective gear, it demonstrates that there is already significant spending in the equestrian domain.
 
 5. How much of that market do you expect to capture, in US dollars?
@@ -57,13 +59,12 @@ Combining these references, we estimate a TAM between USD 200–400 million for 
 
 - [Nightwatch Smart Halter](https://www.smarthalter.com/?srsltid=AfmBOorbEuz4P-iUAZ0rSBhKH2UQfeXk0QQ2rZYL_pUpbizwPAAS-Ua6) – monitors equine vital signs and stress levels, with automated alerts.  
 - [Trackener Life](https://www.veterinary-practice.com/article/an-innovative-tracker-for-equines) – provides GPS tracking and behavior monitoring.  
-- SeeHorse – offers health-focused wearable monitoring for horses.  
 - [Equimetrics](https://www.equimetrics.ie/) – combines physiological monitoring with GPS for equestrian performance.  
 - [Equestic SaddleClip](https://www.equestic.com/product/clip/) – tracks gait and performance metrics for training.
 
 **Differentiator:** None of these competitors combine **GPS tracking, environmental monitoring, and gait/balance detection** in a single integrated system, which is our unique advantage.  
 
-### 3.2.4 Stakeholders (czh,zyh)
+### 3.2.4 Stakeholders
 
 ## Interview Information
 
@@ -99,7 +100,7 @@ They think privacy and security are very important in rural areas — people gen
 It depends on the pricing. They prefer a **monthly subscription at first** to try it out. If the device proves useful, they would like the option to switch to a **lifetime purchase with a discount**. Paying a few hundred dollars upfront for something uncertain would feel too risky.
 
 
-### 3.2.5 System-Level Diagrams (dlh)
+### 3.2.5 System-Level Diagrams
 ![sys](images/sys.png)
 ### 3.2.6 Security Requirements Specification 
 #### Overview
@@ -152,6 +153,12 @@ SRS 05 – All data will be logged with timestamps in a database for later analy
 
 
 SRS 06 – The user interface will provide real-time visualization of leg movement and health parameters on a PC dashboard.
+
+
+
+
+
+
 
 
 
