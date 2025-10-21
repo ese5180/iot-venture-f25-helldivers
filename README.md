@@ -156,7 +156,7 @@ SRS 06 – The user interface will provide real-time visualization of leg moveme
 
 ### 3.4 Wireless Demo
 
-The demo is upload on Github
+The demo is uploaded on Github in the File "wireless_demo".
 
 can pull the repository from GitHub, build, and flash the code to their device.
 
@@ -167,6 +167,7 @@ can pull the repository from GitHub, build, and flash the code to their device.
 can pull the repository from GitHub, build, and flash the code to their device.
 
 Demo video: [Wireless Demo]()
+
 
 
 
