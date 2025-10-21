@@ -166,7 +166,8 @@ can pull the repository from GitHub, build, and flash the code to their device.
 
 can pull the repository from GitHub, build, and flash the code to their device.
 
-Demo video: [Wireless Demo]()
+Demo video: [Wireless Demo](https://youtu.be/xRVHlD40wJ0)
+
 
 
 
