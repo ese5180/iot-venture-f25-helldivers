@@ -154,6 +154,20 @@ SRS 05 – All data will be logged with timestamps in a database for later analy
 
 SRS 06 – The user interface will provide real-time visualization of leg movement and health parameters on a PC dashboard.
 
+### 3.4 Wireless Demo
+
+The demo is upload on Github
+
+can pull the repository from GitHub, build, and flash the code to their device.
+
+Zhongyu Wang can pull the repository from GitHub, build, and flash the code to their device.
+
+can pull the repository from GitHub, build, and flash the code to their device.
+
+can pull the repository from GitHub, build, and flash the code to their device.
+
+Demo video: [Wireless Demo]()
+
 
 
 
