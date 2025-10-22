@@ -164,9 +164,10 @@ Zhongyu Wang can pull the repository from GitHub, build, and flash the code to t
 
 Yuhe Zhang can pull the repository from GitHub, build, and flash the code to their device.
 
-can pull the repository from GitHub, build, and flash the code to their device.
+Zihao Cai can pull the repository from GitHub, build, and flash the code to their device.
 
 Demo video: [Wireless Demo](https://youtu.be/xRVHlD40wJ0)
+
 
 
 
