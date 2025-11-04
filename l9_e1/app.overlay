@@ -1,0 +1,10 @@
+/* STEP 2.1 - Add external flash to application */
+&gd25wb256 {
+	status = "okay";
+};
+ 
+/ {
+	chosen {
+		nordic,pm-ext-flash = &gd25wb256;
+	};
+};

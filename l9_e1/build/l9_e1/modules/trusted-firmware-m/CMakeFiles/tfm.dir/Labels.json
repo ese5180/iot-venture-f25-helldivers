@@ -1,0 +1,43 @@
+{
+	"sources" : 
+	[
+		{
+			"file" : "C:/tmp/ncs-inter/l9/l9_e1/build/l9_e1/modules/trusted-firmware-m/CMakeFiles/tfm"
+		},
+		{
+			"file" : "C:/tmp/ncs-inter/l9/l9_e1/build/l9_e1/modules/trusted-firmware-m/CMakeFiles/tfm.rule"
+		},
+		{
+			"file" : "C:/tmp/ncs-inter/l9/l9_e1/build/l9_e1/modules/trusted-firmware-m/CMakeFiles/tfm-complete.rule"
+		},
+		{
+			"file" : "C:/tmp/ncs-inter/l9/l9_e1/build/l9_e1/modules/trusted-firmware-m/tfm-prefix/src/tfm-stamp/tfm-build.rule"
+		},
+		{
+			"file" : "C:/tmp/ncs-inter/l9/l9_e1/build/l9_e1/modules/trusted-firmware-m/tfm-prefix/src/tfm-stamp/tfm-configure.rule"
+		},
+		{
+			"file" : "C:/tmp/ncs-inter/l9/l9_e1/build/l9_e1/modules/trusted-firmware-m/tfm-prefix/src/tfm-stamp/tfm-download.rule"
+		},
+		{
+			"file" : "C:/tmp/ncs-inter/l9/l9_e1/build/l9_e1/modules/trusted-firmware-m/tfm-prefix/src/tfm-stamp/tfm-install.rule"
+		},
+		{
+			"file" : "C:/tmp/ncs-inter/l9/l9_e1/build/l9_e1/modules/trusted-firmware-m/tfm-prefix/src/tfm-stamp/tfm-mkdir.rule"
+		},
+		{
+			"file" : "C:/tmp/ncs-inter/l9/l9_e1/build/l9_e1/modules/trusted-firmware-m/tfm-prefix/src/tfm-stamp/tfm-patch.rule"
+		},
+		{
+			"file" : "C:/tmp/ncs-inter/l9/l9_e1/build/l9_e1/modules/trusted-firmware-m/tfm-prefix/src/tfm-stamp/tfm-update.rule"
+		}
+	],
+	"target" : 
+	{
+		"labels" : 
+		[
+			"tfm"
+		],
+		"name" : "tfm"
+	}
+}

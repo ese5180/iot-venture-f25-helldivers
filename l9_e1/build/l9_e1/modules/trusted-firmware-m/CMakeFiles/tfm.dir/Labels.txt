@@ -1,0 +1,13 @@
+# Target labels
+ tfm
+# Source files and their labels
+C:/tmp/ncs-inter/l9/l9_e1/build/l9_e1/modules/trusted-firmware-m/CMakeFiles/tfm
+C:/tmp/ncs-inter/l9/l9_e1/build/l9_e1/modules/trusted-firmware-m/CMakeFiles/tfm.rule
+C:/tmp/ncs-inter/l9/l9_e1/build/l9_e1/modules/trusted-firmware-m/CMakeFiles/tfm-complete.rule
+C:/tmp/ncs-inter/l9/l9_e1/build/l9_e1/modules/trusted-firmware-m/tfm-prefix/src/tfm-stamp/tfm-build.rule
+C:/tmp/ncs-inter/l9/l9_e1/build/l9_e1/modules/trusted-firmware-m/tfm-prefix/src/tfm-stamp/tfm-configure.rule
+C:/tmp/ncs-inter/l9/l9_e1/build/l9_e1/modules/trusted-firmware-m/tfm-prefix/src/tfm-stamp/tfm-download.rule
+C:/tmp/ncs-inter/l9/l9_e1/build/l9_e1/modules/trusted-firmware-m/tfm-prefix/src/tfm-stamp/tfm-install.rule
+C:/tmp/ncs-inter/l9/l9_e1/build/l9_e1/modules/trusted-firmware-m/tfm-prefix/src/tfm-stamp/tfm-mkdir.rule
+C:/tmp/ncs-inter/l9/l9_e1/build/l9_e1/modules/trusted-firmware-m/tfm-prefix/src/tfm-stamp/tfm-patch.rule
+C:/tmp/ncs-inter/l9/l9_e1/build/l9_e1/modules/trusted-firmware-m/tfm-prefix/src/tfm-stamp/tfm-update.rule

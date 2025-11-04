@@ -1,0 +1,43 @@
+{
+	"sources" : 
+	[
+		{
+			"file" : "C:/tmp/ncs-inter/l9/l9_e1/build/_sysbuild/sysbuild/images/CMakeFiles/l9_e1"
+		},
+		{
+			"file" : "C:/tmp/ncs-inter/l9/l9_e1/build/_sysbuild/sysbuild/images/CMakeFiles/l9_e1.rule"
+		},
+		{
+			"file" : "C:/tmp/ncs-inter/l9/l9_e1/build/_sysbuild/sysbuild/images/CMakeFiles/l9_e1-complete.rule"
+		},
+		{
+			"file" : "C:/tmp/ncs-inter/l9/l9_e1/build/_sysbuild/sysbuild/images/l9_e1-prefix/src/l9_e1-stamp/l9_e1-build.rule"
+		},
+		{
+			"file" : "C:/tmp/ncs-inter/l9/l9_e1/build/_sysbuild/sysbuild/images/l9_e1-prefix/src/l9_e1-stamp/l9_e1-configure.rule"
+		},
+		{
+			"file" : "C:/tmp/ncs-inter/l9/l9_e1/build/_sysbuild/sysbuild/images/l9_e1-prefix/src/l9_e1-stamp/l9_e1-download.rule"
+		},
+		{
+			"file" : "C:/tmp/ncs-inter/l9/l9_e1/build/_sysbuild/sysbuild/images/l9_e1-prefix/src/l9_e1-stamp/l9_e1-install.rule"
+		},
+		{
+			"file" : "C:/tmp/ncs-inter/l9/l9_e1/build/_sysbuild/sysbuild/images/l9_e1-prefix/src/l9_e1-stamp/l9_e1-mkdir.rule"
+		},
+		{
+			"file" : "C:/tmp/ncs-inter/l9/l9_e1/build/_sysbuild/sysbuild/images/l9_e1-prefix/src/l9_e1-stamp/l9_e1-patch.rule"
+		},
+		{
+			"file" : "C:/tmp/ncs-inter/l9/l9_e1/build/_sysbuild/sysbuild/images/l9_e1-prefix/src/l9_e1-stamp/l9_e1-update.rule"
+		}
+	],
+	"target" : 
+	{
+		"labels" : 
+		[
+			"l9_e1"
+		],
+		"name" : "l9_e1"
+	}
+}

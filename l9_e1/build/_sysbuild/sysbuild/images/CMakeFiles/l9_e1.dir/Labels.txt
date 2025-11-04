@@ -1,0 +1,13 @@
+# Target labels
+ l9_e1
+# Source files and their labels
+C:/tmp/ncs-inter/l9/l9_e1/build/_sysbuild/sysbuild/images/CMakeFiles/l9_e1
+C:/tmp/ncs-inter/l9/l9_e1/build/_sysbuild/sysbuild/images/CMakeFiles/l9_e1.rule
+C:/tmp/ncs-inter/l9/l9_e1/build/_sysbuild/sysbuild/images/CMakeFiles/l9_e1-complete.rule
+C:/tmp/ncs-inter/l9/l9_e1/build/_sysbuild/sysbuild/images/l9_e1-prefix/src/l9_e1-stamp/l9_e1-build.rule
+C:/tmp/ncs-inter/l9/l9_e1/build/_sysbuild/sysbuild/images/l9_e1-prefix/src/l9_e1-stamp/l9_e1-configure.rule
+C:/tmp/ncs-inter/l9/l9_e1/build/_sysbuild/sysbuild/images/l9_e1-prefix/src/l9_e1-stamp/l9_e1-download.rule
+C:/tmp/ncs-inter/l9/l9_e1/build/_sysbuild/sysbuild/images/l9_e1-prefix/src/l9_e1-stamp/l9_e1-install.rule
+C:/tmp/ncs-inter/l9/l9_e1/build/_sysbuild/sysbuild/images/l9_e1-prefix/src/l9_e1-stamp/l9_e1-mkdir.rule
+C:/tmp/ncs-inter/l9/l9_e1/build/_sysbuild/sysbuild/images/l9_e1-prefix/src/l9_e1-stamp/l9_e1-patch.rule
+C:/tmp/ncs-inter/l9/l9_e1/build/_sysbuild/sysbuild/images/l9_e1-prefix/src/l9_e1-stamp/l9_e1-update.rule

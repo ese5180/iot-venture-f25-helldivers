@@ -1,0 +1,20 @@
+{
+    "format-version": 1,
+    "time": 1762220388,
+    "files": [
+        {
+            "type": "application",
+            "board": "nrf9151dk",
+            "soc": "nrf9151",
+            "load_address": 98304,
+            "image_index": "0",
+            "slot_index_primary": "1",
+            "slot_index_secondary": "2",
+            "version_MCUBOOT": "0.1.0+0",
+            "size": 83610,
+            "file": "l9_e1.signed.bin",
+            "modtime": 1762220388
+        }
+    ],
+    "name": "l9_e1"
+}

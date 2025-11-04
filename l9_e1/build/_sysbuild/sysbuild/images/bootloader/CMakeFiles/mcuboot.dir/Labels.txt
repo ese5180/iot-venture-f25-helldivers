@@ -1,0 +1,13 @@
+# Target labels
+ mcuboot
+# Source files and their labels
+C:/tmp/ncs-inter/l9/l9_e1/build/_sysbuild/sysbuild/images/bootloader/CMakeFiles/mcuboot
+C:/tmp/ncs-inter/l9/l9_e1/build/_sysbuild/sysbuild/images/bootloader/CMakeFiles/mcuboot.rule
+C:/tmp/ncs-inter/l9/l9_e1/build/_sysbuild/sysbuild/images/bootloader/CMakeFiles/mcuboot-complete.rule
+C:/tmp/ncs-inter/l9/l9_e1/build/_sysbuild/sysbuild/images/bootloader/mcuboot-prefix/src/mcuboot-stamp/mcuboot-build.rule
+C:/tmp/ncs-inter/l9/l9_e1/build/_sysbuild/sysbuild/images/bootloader/mcuboot-prefix/src/mcuboot-stamp/mcuboot-configure.rule
+C:/tmp/ncs-inter/l9/l9_e1/build/_sysbuild/sysbuild/images/bootloader/mcuboot-prefix/src/mcuboot-stamp/mcuboot-download.rule
+C:/tmp/ncs-inter/l9/l9_e1/build/_sysbuild/sysbuild/images/bootloader/mcuboot-prefix/src/mcuboot-stamp/mcuboot-install.rule
+C:/tmp/ncs-inter/l9/l9_e1/build/_sysbuild/sysbuild/images/bootloader/mcuboot-prefix/src/mcuboot-stamp/mcuboot-mkdir.rule
+C:/tmp/ncs-inter/l9/l9_e1/build/_sysbuild/sysbuild/images/bootloader/mcuboot-prefix/src/mcuboot-stamp/mcuboot-patch.rule
+C:/tmp/ncs-inter/l9/l9_e1/build/_sysbuild/sysbuild/images/bootloader/mcuboot-prefix/src/mcuboot-stamp/mcuboot-update.rule

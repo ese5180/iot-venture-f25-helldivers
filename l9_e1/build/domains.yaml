@@ -1,0 +1,9 @@
+default: l9_e1
+build_dir: C:/tmp/ncs-inter/l9/l9_e1/build
+domains:
+  - name: l9_e1
+    build_dir: C:/tmp/ncs-inter/l9/l9_e1/build/l9_e1
+  - name: mcuboot
+    build_dir: C:/tmp/ncs-inter/l9/l9_e1/build/mcuboot
+flash_order:
+  - l9_e1
