@@ -171,16 +171,127 @@ Zihao Cai can pull the repository from GitHub, build, and flash the code to thei
 Demo video: [Wireless Demo](https://youtu.be/xRVHlD40wJ0)
 
 
+### 3.5 Secure Firmware Updates
+
+## (3.5.1) Bootloading Process Description
+
+### 1. Bootloader Size
+From the memory map:  
+Partition: mcuboot_primary_app  
+Address range: 0x00010200 – 0x00017FFF  
+Size: ~64 KB (0x8000)
+
+The MCUboot bootloader occupies approximately 64 KB of internal flash memory.  
+It is responsible for validating firmware signatures and managing firmware swapping between slots.
+
+---
+![alt text](images/10931762219515_.pic.jpg)
 
 
+### 2. Application Code Size
+From the same memory report:  
+Partition: app  
+Address range: 0x00018000 – 0x000FFFFF  
+Size: 928 KB
+
+The main application image occupies approximately 928 KB of flash memory.  
+This includes the Zephyr-based user application and the MCUmgr subsystem used for firmware updates.
+
+---
+
+### 3. Who Handles Firmware Image Download
+The firmware image download is handled by the application, not the bootloader.  
+
+- MCUboot validates image signatures and performs slot swaps during boot.  
+- The application uses the MCUmgr subsystem via the SMP (Simple Management Protocol) over UART to receive and write firmware images.
+
+Handled by: Application (MCUmgr over UART)
+
+---
+
+### 4. Wireless Communication Used for Image Download
+In this lab setup, firmware images are transferred through:  
+UART + SMP v2 protocol (Serial DFU)
+
+Wireless method used: UART (Serial DFU)
+
+---
+
+### 5. Why This Communication Method Was Chosen
+- UART DFU provides a simple and reliable interface for testing MCUboot and MCUmgr integration.  
+- It does not require configuring LTE or BLE stacks.  
+- It allows fast debugging and consistent transfers during development.
+
+Reason for choice: simplicity, reliability, and ease of debugging.
+
+---
+
+### 6. Where the Downloaded Firmware Images Are Stored
+The new firmware images are written into the secondary slot before activation.  
+Partition: mcuboot_secondary  
+Address range: 0x000E0000 – 0x000EFFFF  
+Size: 960 KB
+
+Stored in: mcuboot_secondary partition (in external flash)
+
+---
+
+### 7. Features Enabled to Handle Firmware Update Failures
+MCUboot implements several mechanisms to protect against faulty or invalid updates.
+
+| Failure Type | Handling Feature |
+|---------------|------------------|
+| Invalid signature | ECDSA P-256 digital signature verification using the private/public key pair |
+| Faulty but signed code | Two-step "Test → Confirm" update process (new image only confirmed after successful boot) |
+| Corrupted firmware | SHA-256 hash check ensures data integrity |
+| Interrupted transfer | Size and CRC validation before marking the image as ready |
+| Version mismatch | Version comparison prevents downgrades |
+| Power failure during swap | Atomic image swapping and rollback support |
+
+Enabled safety features:
+- Digital signature verification (ECDSA P-256)  
+- SHA-256 integrity checking  
+- Slot rollback and atomic swap recovery  
+- Test-before-confirm update process
+
+---
+
+### 8. Summary
+
+| Item | Description |
+|------|--------------|
+| Bootloader size | ~64 KB |
+| Application size | ~928 KB |
+| Who downloads firmware | Application (MCUmgr subsystem) |
+| Communication method | UART (Serial DFU using SMP v2) |
+| Reason for method | Simple, reliable, and easy to debug |
+| Image storage | mcuboot_secondary partition (external flash) |
+| Failure recovery | Signature verification, hash check, rollback, confirm-test mechanism |
+
+---
+![alt text](images/image.png)
+![alt text](<images/image copy.png>)
+![alt text](<images/image copy 2.png>)
+
+### 9. Bootloading Process Overview
+
+1. Device powers on and runs MCUboot.  
+2. MCUboot checks the primary slot for a valid, signed image.  
+3. If a new image is found in the secondary slot, MCUboot verifies it and swaps it into the primary slot.  
+4. MCUboot boots the main application.  
+5. The application runs normally and can use MCUmgr to download new firmware images.  
+6. When a new image is received, it is written to the secondary slot and marked as "test."  
+7. On reboot, MCUboot validates and boots the test image.  
+8. If it runs successfully, the application confirms it; otherwise, MCUboot rolls back to the previous version.
+
+---
+
+### 10. Boot Flow Diagram
+![alt text](images/123.png)
 
 
-
-
-
-
-
-
+## (3.5.2) FOTA 
+# APPROVED BY NICK, since our celluar is not working as expected, ignored for now. 
 
 
 
