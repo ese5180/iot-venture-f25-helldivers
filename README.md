@@ -293,6 +293,6 @@ Enabled safety features:
 ## (3.5.2) FOTA 
 # APPROVED BY NICK, since our celluar is not working as expected, ignored for now. 
 
-
+https://devzone.nordicsemi.com/f/nordic-q-a/125395/rf9151-dk-connects-to-nrf-cloud-via-coap-but-mqtt-public-internet-not-accessible-conexa-sim
 
 
