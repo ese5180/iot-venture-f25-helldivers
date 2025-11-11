@@ -1,5 +1,6 @@
 {
     "nrf-connect.applications": [
-        "${workspaceFolder}/GNSS"
+        "${workspaceFolder}/GNSS",
+        "${workspaceFolder}/serial_lte_modem"
     ]
 }
