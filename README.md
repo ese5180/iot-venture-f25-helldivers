@@ -299,6 +299,7 @@ https://devzone.nordicsemi.com/f/nordic-q-a/125395/rf9151-dk-connects-to-nrf-clo
 
 ## 3.6 Concept Refinement
 
-### Cost model 
+### IoT Venture BOM and Cost Model
 https://docs.google.com/spreadsheets/d/1zmwnLL9aSm3jkdN8P-3BPP1QO4xDeBbsMbr3Et-MiHA/edit?gid=2020998309#gid=2020998309
+
 
