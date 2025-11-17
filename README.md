@@ -297,5 +297,6 @@ Enabled safety features:
 
 https://devzone.nordicsemi.com/f/nordic-q-a/125395/rf9151-dk-connects-to-nrf-cloud-via-coap-but-mqtt-public-internet-not-accessible-conexa-sim
 
+## 3.6 Concept Refinement
 
 
