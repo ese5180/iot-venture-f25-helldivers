@@ -124,13 +124,15 @@ The device must be lightweight, durable, and capable of continuous operation in 
 
 HRS 01 – The system shall be based on a Nordic microcontroller (e.g., nRF52840) to ensure Zephyr RTOS compatibility.
 
-HRS 02 – The hardware shall include GPS(for water intake detection as well), IMU (accelerometer + gyroscope), temperature/humidity sensor, and optional ToF module for leg movement monitoring.
+HRS 02 – The hardware shall include GPS, IMU (accelerometer + gyroscope), temperature/humidity sensor, and an optional ToF module for leg movement monitoring.
 
 HRS 03 – The device shall be powered by a rechargeable Li-Po battery with >24 hours continuous operation, with optional solar trickle charging for extended use.
 
 HRS 04 – The enclosure shall be weather-resistant (IP65 or higher), lightweight (<300 g), and safe for equine wear without causing discomfort.
 
 HRS 05 – The hardware should include a IMU that detects the balance of horses, monitoring if they are in sleep. 
+
+HRS 06 – The hardware shall provide an interface (e.g., GPIO/ADC) for connecting an external water-intake sensor at the trough to measure and log each horse’s daily water consumption.
 
 ### 3.2.8 Software Requirements Specification 
 
@@ -294,5 +296,6 @@ Enabled safety features:
 # APPROVED BY NICK, since our celluar is not working as expected, ignored for now. 
 
 https://devzone.nordicsemi.com/f/nordic-q-a/125395/rf9151-dk-connects-to-nrf-cloud-via-coap-but-mqtt-public-internet-not-accessible-conexa-sim
+
 
 
