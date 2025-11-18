@@ -1,8 +1,0 @@
-{
-    "files.associations": {
-        "log_ctrl.h": "c",
-        "nrf_modem.h": "c",
-        "modem_info.h": "c",
-        "lte_lc.h": "c"
-    }
-}

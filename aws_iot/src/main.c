@@ -1,8 +1,3 @@
-/*
- * AWS IoT + nRF9151DK + LTE-M
- * 方式 1：443 + ALPN，基于你当前版本清理增强
- */
-
 #include <zephyr/kernel.h>
 #include <zephyr/sys/reboot.h>
 #include <zephyr/dfu/mcuboot.h>
@@ -18,9 +13,51 @@
 
 #include "json_payload.h"
 
-/* 在 cert_provision.c 里实现的函数，这里只做声明 */
-int provision_credentials(void);
+#include <nrf_modem.h>
+#include <modem/lte_lc.h>
+////////
+#include <net/aws_iot.h>
 
+void publish_horse_data(float temperature, float moisture, float pitch,
+                        float gps_lat, float gps_lon)
+{
+    char payload[256];
+
+    /* 1. 用 %f 把浮点数格式化成真正的数字 */
+    snprintf(payload, sizeof(payload),
+             "{"
+               "\"temperature\": %.2f,"
+               "\"moisture\": %.2f,"
+               "\"pitch\": %.2f,"
+               "\"gps\": {\"lat\": %.6f, \"lon\": %.6f}"
+             "}",
+             temperature, moisture, pitch, gps_lat, gps_lon);
+
+    struct aws_iot_data tx;
+    memset(&tx, 0, sizeof(tx));
+
+    /* 2. QoS */
+    tx.qos = MQTT_QOS_1_AT_LEAST_ONCE;
+
+    /* 3. 载荷指针和长度 */
+    tx.ptr = payload;
+    tx.len = strlen(payload);
+
+
+    tx.topic.str  = "horse_data";
+    tx.topic.len  = strlen(tx.topic.str);
+
+    int err = aws_iot_send(&tx);
+    if (err) {
+        printk("horse_data publish error: %d\n", err);
+    } else {
+        printk("horse_data sent: %s\n", payload);
+    }
+}
+
+
+
+////////
 LOG_MODULE_REGISTER(aws_iot_sample, CONFIG_AWS_IOT_SAMPLE_LOG_LEVEL);
 
 #define L4_EVENT_MASK         (NET_EVENT_L4_CONNECTED | NET_EVENT_L4_DISCONNECTED)
@@ -32,9 +69,9 @@ LOG_MODULE_REGISTER(aws_iot_sample, CONFIG_AWS_IOT_SAMPLE_LOG_LEVEL);
 #define MY_CUSTOM_TOPIC_2 "my-custom-topic/example_2"
 
 #define FATAL_ERROR()                             \
-	LOG_ERR("Fatal error! Rebooting the device.");\
-	LOG_PANIC();                                  \
-	IF_ENABLED(CONFIG_REBOOT, (sys_reboot(0)))
+    LOG_ERR("Fatal error! Rebooting the device.");\
+    LOG_PANIC();                                  \
+    IF_ENABLED(CONFIG_REBOOT, (sys_reboot(0)))
 
 static struct net_mgmt_event_callback l4_cb;
 static struct net_mgmt_event_callback conn_cb;
@@ -48,320 +85,325 @@ static void aws_iot_event_handler(const struct aws_iot_evt *const evt);
 static K_WORK_DELAYABLE_DEFINE(shadow_update_work, shadow_update_work_fn);
 static K_WORK_DELAYABLE_DEFINE(connect_work, connect_work_fn);
 
-/* ========== Application topics ========== */
+/* ================= Application topics ================= */
 
 static int app_topics_subscribe(void)
 {
-	int err;
-	static const struct mqtt_topic topic_list[] = {
-		{
-			.topic.utf8 = MY_CUSTOM_TOPIC_1,
-			.topic.size = sizeof(MY_CUSTOM_TOPIC_1) - 1,
-			.qos = MQTT_QOS_1_AT_LEAST_ONCE,
-		},
-		{
-			.topic.utf8 = MY_CUSTOM_TOPIC_2,
-			.topic.size = sizeof(MY_CUSTOM_TOPIC_2) - 1,
-			.qos = MQTT_QOS_1_AT_LEAST_ONCE,
-		}
-	};
+    int err;
+    static const struct mqtt_topic topic_list[] = {
+        {
+            .topic.utf8 = MY_CUSTOM_TOPIC_1,
+            .topic.size = sizeof(MY_CUSTOM_TOPIC_1) - 1,
+            .qos = MQTT_QOS_1_AT_LEAST_ONCE,
+        },
+        {
+            .topic.utf8 = MY_CUSTOM_TOPIC_2,
+            .topic.size = sizeof(MY_CUSTOM_TOPIC_2) - 1,
+            .qos = MQTT_QOS_1_AT_LEAST_ONCE,
+        },
+        {
+            .topic.utf8 = "horse_data",
+            .topic.size = sizeof("horse_data") - 1,
+            .qos = MQTT_QOS_1_AT_LEAST_ONCE,
+        }
+    };
 
-	err = aws_iot_application_topics_set(topic_list, ARRAY_SIZE(topic_list));
-	if (err) {
-		LOG_ERR("aws_iot_application_topics_set, error: %d", err);
-		FATAL_ERROR();
-		return err;
-	}
+    err = aws_iot_application_topics_set(topic_list, ARRAY_SIZE(topic_list));
+    if (err) {
+        LOG_ERR("aws_iot_application_topics_set, error: %d", err);
+        FATAL_ERROR();
+        return err;
+    }
 
-	return 0;
+    return 0;
 }
 
-/* ========== AWS IoT client init ========== */
+/* ================= AWS IoT client init ================= */
 
 static int aws_iot_client_init(void)
 {
-	int err;
+    int err;
 
-	printk("=== aws_iot_client_init: start ===\n");
+    printk("=== aws_iot_client_init: start ===\n");
 
-	err = aws_iot_init(aws_iot_event_handler);
-	if (err) {
-		LOG_ERR("AWS IoT library could not be initialized, error: %d", err);
-		FATAL_ERROR();
-		return err;
-	}
+    err = aws_iot_init(aws_iot_event_handler);
+    if (err) {
+        LOG_ERR("AWS IoT library could not be initialized, error: %d", err);
+        FATAL_ERROR();
+        return err;
+    }
 
-	printk("=== aws_iot_client_init: aws_iot_init OK ===\n");
+    printk("=== aws_iot_client_init: aws_iot_init OK ===\n");
 
-	err = app_topics_subscribe();
-	if (err) {
-		LOG_ERR("Adding application specific topics failed, error: %d", err);
-		FATAL_ERROR();
-		return err;
-	}
+    err = app_topics_subscribe();
+    if (err) {
+        LOG_ERR("Adding application specific topics failed, error: %d", err);
+        FATAL_ERROR();
+        return err;
+    }
 
-	printk("=== aws_iot_client_init: topics subscribed OK ===\n");
+    printk("=== aws_iot_client_init: topics subscribed OK ===\n");
 
-	return 0;
+    return 0;
 }
 
-/* ========== Shadow update work ========== */
+/* ================= Shadow update work ================= */
 
 static void shadow_update_work_fn(struct k_work *work)
 {
-	int err;
-	char message[CONFIG_AWS_IOT_SAMPLE_JSON_MESSAGE_SIZE_MAX] = { 0 };
-	struct payload payload = {
-		.state.reported.uptime = k_uptime_get(),
-		.state.reported.app_version = CONFIG_AWS_IOT_SAMPLE_APP_VERSION,
-	};
-	struct aws_iot_data tx_data = {
-		.qos = MQTT_QOS_0_AT_MOST_ONCE,
-		.topic.type = AWS_IOT_SHADOW_TOPIC_UPDATE,
-	};
+    int err;
+    char message[CONFIG_AWS_IOT_SAMPLE_JSON_MESSAGE_SIZE_MAX] = { 0 };
+    struct payload payload = {
+        .state.reported.uptime = k_uptime_get(),
+        .state.reported.app_version = CONFIG_AWS_IOT_SAMPLE_APP_VERSION,
+    };
+    struct aws_iot_data tx_data = {
+        .qos = MQTT_QOS_0_AT_MOST_ONCE,
+        .topic.type = AWS_IOT_SHADOW_TOPIC_UPDATE,
+    };
 
-	if (IS_ENABLED(CONFIG_MODEM_INFO)) {
-		char modem_version_temp[MODEM_FIRMWARE_VERSION_SIZE_MAX];
+    if (IS_ENABLED(CONFIG_MODEM_INFO)) {
+        char modem_version_temp[MODEM_FIRMWARE_VERSION_SIZE_MAX];
 
-		err = modem_info_get_fw_version(modem_version_temp,
-						ARRAY_SIZE(modem_version_temp));
-		if (err) {
-			LOG_ERR("modem_info_get_fw_version, error: %d", err);
-			FATAL_ERROR();
-			return;
-		}
+        err = modem_info_get_fw_version(modem_version_temp,
+                        ARRAY_SIZE(modem_version_temp));
+        if (err) {
+            LOG_ERR("modem_info_get_fw_version, error: %d", err);
+            FATAL_ERROR();
+            return;
+        }
 
-		payload.state.reported.modem_version = modem_version_temp;
-	}
+        payload.state.reported.modem_version = modem_version_temp;
+    }
 
-	err = json_payload_construct(message, sizeof(message), &payload);
-	if (err) {
-		LOG_ERR("json_payload_construct, error: %d", err);
-		FATAL_ERROR();
-		return;
-	}
+    err = json_payload_construct(message, sizeof(message), &payload);
+    if (err) {
+        LOG_ERR("json_payload_construct, error: %d", err);
+        FATAL_ERROR();
+        return;
+    }
 
-	tx_data.ptr = message;
-	tx_data.len = strlen(message);
+    tx_data.ptr = message;
+    tx_data.len = strlen(message);
 
-	LOG_INF("Publishing message: %s to AWS IoT shadow", message);
+    LOG_INF("Publishing message: %s to AWS IoT shadow", message);
 
-	err = aws_iot_send(&tx_data);
-	if (err) {
-		LOG_ERR("aws_iot_send, error: %d", err);
-		FATAL_ERROR();
-		return;
-	}
+    err = aws_iot_send(&tx_data);
+    if (err) {
+        LOG_ERR("aws_iot_send, error: %d", err);
+        FATAL_ERROR();
+        return;
+    }
 
-	(void)k_work_reschedule(&shadow_update_work,
-		K_SECONDS(CONFIG_AWS_IOT_SAMPLE_PUBLICATION_INTERVAL_SECONDS));
+    (void)k_work_reschedule(&shadow_update_work,
+        K_SECONDS(CONFIG_AWS_IOT_SAMPLE_PUBLICATION_INTERVAL_SECONDS));
 }
 
-/* ========== Connect work (真正发起 aws_iot_connect 的地方) ========== */
+/* ================= Connect work ================= */
 
 static void connect_work_fn(struct k_work *work)
 {
-	int err;
-	const struct aws_iot_config config = {
-		.client_id = hw_id,
-	};
+    int err;
+    const struct aws_iot_config config = {
+        .client_id = hw_id,
+    };
 
-	LOG_INF("Connecting to AWS IoT (client_id: %s, host: %s, port: %d)",
-		hw_id,
-		CONFIG_AWS_IOT_BROKER_HOST_NAME,
+    LOG_INF("Connecting to AWS IoT (client_id: %s, host: %s, port: %d)",
+        hw_id,
+        CONFIG_AWS_IOT_BROKER_HOST_NAME,
 #ifdef CONFIG_MQTT_HELPER_PORT
-		CONFIG_MQTT_HELPER_PORT
+        CONFIG_MQTT_HELPER_PORT
 #else
-		-1
+        -1
 #endif
-	);
+    );
 
-	err = aws_iot_connect(&config);
-	printk("=== connect_work_fn: aws_iot_connect() returned: %d ===\n", err);
+    err = aws_iot_connect(&config);
+    printk("=== connect_work_fn: aws_iot_connect() returned: %d ===\n", err);
 
-	if (err == -EAGAIN) {
-		LOG_INF("Connection attempt timed out, next retry in %d seconds",
-			CONFIG_AWS_IOT_SAMPLE_CONNECTION_RETRY_TIMEOUT_SECONDS);
+    if (err == -EAGAIN) {
+        LOG_INF("Connection attempt timed out, next retry in %d seconds",
+            CONFIG_AWS_IOT_SAMPLE_CONNECTION_RETRY_TIMEOUT_SECONDS);
 
-		(void)k_work_reschedule(&connect_work,
-			K_SECONDS(CONFIG_AWS_IOT_SAMPLE_CONNECTION_RETRY_TIMEOUT_SECONDS));
-	} else if (err) {
-		LOG_ERR("aws_iot_connect, error: %d", err);
-		FATAL_ERROR();
-	}
+        (void)k_work_reschedule(&connect_work,
+            K_SECONDS(CONFIG_AWS_IOT_SAMPLE_CONNECTION_RETRY_TIMEOUT_SECONDS));
+    } else if (err) {
+        LOG_ERR("aws_iot_connect, error: %d", err);
+        FATAL_ERROR();
+    }
 }
 
-/* ========== AWS IoT event handler ========== */
+/* ================= AWS IoT event handler ================= */
 
 static void on_aws_iot_evt_connected(const struct aws_iot_evt *const evt)
 {
-	(void)k_work_cancel_delayable(&connect_work);
+    (void)k_work_cancel_delayable(&connect_work);
 
-	if (evt->data.persistent_session) {
-		LOG_WRN("Persistent session enabled, reusing subscriptions");
-	}
+    if (evt->data.persistent_session) {
+        LOG_WRN("Persistent session enabled, reusing subscriptions");
+    }
 
 #if defined(CONFIG_BOOTLOADER_MCUBOOT)
-	boot_write_img_confirmed();
+    boot_write_img_confirmed();
 #endif
+    publish_horse_data(23.5f, 56.7f, 12.8f, 39.952213f, -75.193456f);
 
-	(void)k_work_reschedule(&shadow_update_work, K_NO_WAIT);
+    (void)k_work_reschedule(&shadow_update_work, K_NO_WAIT);
 }
 
 static void on_aws_iot_evt_disconnected(void)
 {
-	(void)k_work_cancel_delayable(&shadow_update_work);
-	(void)k_work_reschedule(&connect_work, K_SECONDS(5));
+    (void)k_work_cancel_delayable(&shadow_update_work);
+    (void)k_work_reschedule(&connect_work, K_SECONDS(5));
 }
 
 static void aws_iot_event_handler(const struct aws_iot_evt *const evt)
 {
-	switch (evt->type) {
-	case AWS_IOT_EVT_CONNECTING:
-		LOG_INF("AWS_IOT_EVT_CONNECTING");
-		break;
-	case AWS_IOT_EVT_CONNECTED:
-		LOG_INF("AWS_IOT_EVT_CONNECTED");
-		on_aws_iot_evt_connected(evt);
-		break;
-	case AWS_IOT_EVT_DISCONNECTED:
-		LOG_INF("AWS_IOT_EVT_DISCONNECTED");
-		on_aws_iot_evt_disconnected();
-		break;
-	case AWS_IOT_EVT_DATA_RECEIVED:
-		LOG_INF("AWS_IOT_EVT_DATA_RECEIVED");
-		LOG_INF("Received: \"%.*s\" on \"%.*s\"",
-			evt->data.msg.len, evt->data.msg.ptr,
-			evt->data.msg.topic.len, evt->data.msg.topic.str);
-		break;
-	case AWS_IOT_EVT_PUBACK:
-		LOG_INF("AWS_IOT_EVT_PUBACK id=%d", evt->data.message_id);
-		break;
-	case AWS_IOT_EVT_PINGRESP:
-		LOG_INF("AWS_IOT_EVT_PINGRESP");
-		break;
-	case AWS_IOT_EVT_ERROR:
-		LOG_INF("AWS_IOT_EVT_ERROR %d", evt->data.err);
-		FATAL_ERROR();
-		break;
-	default:
-		LOG_WRN("Unknown AWS IoT event %d", evt->type);
-		break;
-	}
+    switch (evt->type) {
+    case AWS_IOT_EVT_CONNECTING:
+        LOG_INF("AWS_IOT_EVT_CONNECTING");
+        break;
+    case AWS_IOT_EVT_CONNECTED:
+        LOG_INF("AWS_IOT_EVT_CONNECTED");
+        on_aws_iot_evt_connected(evt);
+        break;
+    case AWS_IOT_EVT_DISCONNECTED:
+        LOG_INF("AWS_IOT_EVT_DISCONNECTED");
+        on_aws_iot_evt_disconnected();
+        break;
+    case AWS_IOT_EVT_DATA_RECEIVED:
+        LOG_INF("AWS_IOT_EVT_DATA_RECEIVED");
+        LOG_INF("Received: \"%.*s\" on \"%.*s\"",
+            evt->data.msg.len, evt->data.msg.ptr,
+            evt->data.msg.topic.len, evt->data.msg.topic.str);
+        break;
+    case AWS_IOT_EVT_PUBACK:
+        LOG_INF("AWS_IOT_EVT_PUBACK id=%d", evt->data.message_id);
+        break;
+    case AWS_IOT_EVT_PINGRESP:
+        LOG_INF("AWS_IOT_EVT_PINGRESP");
+        break;
+    case AWS_IOT_EVT_ERROR:
+        LOG_INF("AWS_IOT_EVT_ERROR %d", evt->data.err);
+        FATAL_ERROR();
+        break;
+    default:
+        LOG_WRN("Unknown AWS IoT event %d", evt->type);
+        break;
+    }
 }
 
-/* ========== Network event handlers ========== */
+/* ================= Network event handlers ================= */
 
 static void l4_event_handler(struct net_mgmt_event_callback *cb,
-			     uint32_t event,
-			     struct net_if *iface)
+                 uint32_t event,
+                 struct net_if *iface)
 {
-	switch (event) {
-	case NET_EVENT_L4_CONNECTED:
-		LOG_INF("Network connectivity established");
-		printk("=== L4_CONNECTED: scheduling connect_work ===\n");
+    switch (event) {
+    case NET_EVENT_L4_CONNECTED:
+        LOG_INF("Network connectivity established");
+        printk("=== L4_CONNECTED: scheduling connect_work ===\n");
 
-		/* LTE 一连上就开始连 AWS IoT */
-		(void)k_work_schedule(&connect_work, K_NO_WAIT);
-		break;
-	case NET_EVENT_L4_DISCONNECTED:
-		LOG_INF("Network connectivity lost");
-		break;
-	default:
-		return;
-	}
+        (void)k_work_schedule(&connect_work, K_NO_WAIT);
+        break;
+    case NET_EVENT_L4_DISCONNECTED:
+        LOG_INF("Network connectivity lost");
+        break;
+    default:
+        return;
+    }
 }
 
 static void connectivity_event_handler(struct net_mgmt_event_callback *cb,
-				       uint32_t event,
-				       struct net_if *iface)
+                       uint32_t event,
+                       struct net_if *iface)
 {
-	if (event == NET_EVENT_CONN_IF_FATAL_ERROR) {
-		LOG_ERR("NET_EVENT_CONN_IF_FATAL_ERROR");
-		FATAL_ERROR();
-	}
+    if (event == NET_EVENT_CONN_IF_FATAL_ERROR) {
+        LOG_ERR("NET_EVENT_CONN_IF_FATAL_ERROR");
+        FATAL_ERROR();
+    }
 }
 
-/* ========== main ========== */
+/* ============================ main ============================ */
 
 int main(void)
 {
-	LOG_INF("The AWS IoT sample started, version: %s",
-		CONFIG_AWS_IOT_SAMPLE_APP_VERSION);
+    int err;
+    extern int provision_credentials(void);
 
-	printk("=== HELLDIVERS AWS MAIN, built at " __DATE__ " " __TIME__ " ===\n");
+    LOG_INF("The AWS IoT sample started, version: %s",
+        CONFIG_AWS_IOT_SAMPLE_APP_VERSION);
 
-	int err;
+    printk("=== HELLDIVERS AWS MAIN, built at " __DATE__ " " __TIME__ " ===\n");
 
-	/* 启动时先把 AWS 证书写进 modem（先删再写） */
-	printk("=== Before provision_credentials ===\n");
-	err = provision_credentials();
-	printk("=== provision_credentials() returned: %d ===\n", err);
-	if (err) {
-		LOG_ERR("Provisioning failed: %d", err);
-		FATAL_ERROR();
-		return err;
-	}
+    /* 1. 注册网络事件回调 */
+    net_mgmt_init_event_callback(&l4_cb, l4_event_handler, L4_EVENT_MASK);
+    net_mgmt_add_event_callback(&l4_cb);
 
-	net_mgmt_init_event_callback(&l4_cb, l4_event_handler, L4_EVENT_MASK);
-	net_mgmt_add_event_callback(&l4_cb);
+    net_mgmt_init_event_callback(&conn_cb, connectivity_event_handler,
+                     CONN_LAYER_EVENT_MASK);
+    net_mgmt_add_event_callback(&conn_cb);
 
-	net_mgmt_init_event_callback(&conn_cb, connectivity_event_handler,
-				     CONN_LAYER_EVENT_MASK);
-	net_mgmt_add_event_callback(&conn_cb);
+    LOG_INF("Bringing network interface up and connecting");
+    printk("=== Before conn_mgr_all_if_up ===\n");
 
-	LOG_INF("Bringing network interface up and connecting");
-	printk("=== Before conn_mgr_all_if_up ===\n");
+    /* 2. 让 conn_mgr 初始化 modem 并 bring up 接口 */
+    err = conn_mgr_all_if_up(true);
+    printk("=== conn_mgr_all_if_up() returned: %d ===\n", err);
+    if (err) {
+        LOG_ERR("conn_mgr_all_if_up error: %d", err);
+        FATAL_ERROR();
+        return err;
+    }
 
-	err = conn_mgr_all_if_up(true);
-	printk("=== conn_mgr_all_if_up() returned: %d ===\n", err);
-	if (err) {
-		LOG_ERR("conn_mgr_all_if_up error: %d", err);
-		FATAL_ERROR();
-		return err;
-	}
+    /* ★★★ 3. 此时 modem 已经初始化，开始写证书 ★★★ */
+    err = provision_credentials();
+    if (err) {
+        LOG_ERR("provision_credentials failed: %d", err);
+        FATAL_ERROR();
+        return err;
+    }
 
-	printk("=== Before conn_mgr_all_if_connect ===\n");
-	err = conn_mgr_all_if_connect(true);
-	printk("=== conn_mgr_all_if_connect() returned: %d ===\n", err);
-	if (err) {
-		LOG_ERR("conn_mgr_all_if_connect error: %d", err);
-		FATAL_ERROR();
-		return err;
-	}
+    printk("=== Before conn_mgr_all_if_connect ===\n");
+    err = conn_mgr_all_if_connect(true);
+    printk("=== conn_mgr_all_if_connect() returned: %d ===\n", err);
+    if (err) {
+        LOG_ERR("conn_mgr_all_if_connect error: %d", err);
+        FATAL_ERROR();
+        return err;
+    }
 
-#if defined(CONFIG_AWS_IOT_SAMPLE_DEVICE_ID_USE_HW_ID)
-	printk("=== Before hw_id_get ===\n");
-	err = hw_id_get(hw_id, ARRAY_SIZE(hw_id));
-	printk("=== hw_id_get() returned: %d ===\n", err);
-	if (err) {
-		LOG_ERR("Failed to retrieve hardware ID, error: %d", err);
-		FATAL_ERROR();
-		return err;
-	}
-	LOG_INF("Hardware ID: %s", hw_id);
-	printk("=== Hardware ID: %s ===\n", hw_id);
+#if defined(CONFIG_AWS_IOT_SAMPLE_CLIENT_ID_USE_HW_ID)
+    printk("=== Before hw_id_get ===\n");
+    err = hw_id_get(hw_id, ARRAY_SIZE(hw_id));
+    printk("=== hw_id_get() returned: %d ===\n", err);
+    if (err) {
+        LOG_ERR("Failed to retrieve hardware ID, error: %d", err);
+        FATAL_ERROR();
+        return err;
+    }
+    LOG_INF("Hardware ID: %s", hw_id);
+    printk("=== Hardware ID: %s ===\n", hw_id);
 #else
-	/* 如果没开 USE_HW_ID，就用静态 client_id 兜底，避免空字符串 */
-	snprintf(hw_id, sizeof(hw_id), "%s", CONFIG_AWS_IOT_CLIENT_ID_STATIC);
-	LOG_INF("Using static client ID as hw_id: %s", hw_id);
-	printk("=== Using static client ID as hw_id: %s ===\n", hw_id);
+    snprintf(hw_id, sizeof(hw_id), "%s", CONFIG_AWS_IOT_CLIENT_ID_STATIC);
+    LOG_INF("Using static client ID as hw_id: %s", hw_id);
+    printk("=== Using static client ID as hw_id: %s ===\n", hw_id);
 #endif
 
-	printk("=== Before aws_iot_client_init ===\n");
-	err = aws_iot_client_init();
-	printk("=== aws_iot_client_init() returned: %d ===\n", err);
-	if (err) {
-		LOG_ERR("aws_iot_client_init error: %d", err);
-		FATAL_ERROR();
-		return err;
-	}
+    printk("=== Before aws_iot_client_init ===\n");
+    err = aws_iot_client_init();
+    printk("=== aws_iot_client_init() returned: %d ===\n", err);
+    if (err) {
+        LOG_ERR("aws_iot_client_init error: %d", err);
+        FATAL_ERROR();
+        return err;
+    }
 
-	if (IS_ENABLED(CONFIG_BOARD_NATIVE_SIM)) {
-		conn_mgr_mon_resend_status();
-	}
+    if (IS_ENABLED(CONFIG_BOARD_NATIVE_SIM)) {
+        conn_mgr_mon_resend_status();
+    }
 
-	printk("=== main() finished, waiting for events ===\n");
+    printk("=== main() finished, waiting for events ===\n");
 
-	return 0;
+    return 0;
 }
