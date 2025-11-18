@@ -18,6 +18,9 @@
 
 #include "json_payload.h"
 
+/* 在 cert_provision.c 里实现的函数，这里只做声明 */
+int provision_credentials(void);
+
 LOG_MODULE_REGISTER(aws_iot_sample, CONFIG_AWS_IOT_SAMPLE_LOG_LEVEL);
 
 #define L4_EVENT_MASK         (NET_EVENT_L4_CONNECTED | NET_EVENT_L4_DISCONNECTED)
@@ -289,6 +292,16 @@ int main(void)
 	printk("=== HELLDIVERS AWS MAIN, built at " __DATE__ " " __TIME__ " ===\n");
 
 	int err;
+
+	/* 启动时先把 AWS 证书写进 modem（先删再写） */
+	printk("=== Before provision_credentials ===\n");
+	err = provision_credentials();
+	printk("=== provision_credentials() returned: %d ===\n", err);
+	if (err) {
+		LOG_ERR("Provisioning failed: %d", err);
+		FATAL_ERROR();
+		return err;
+	}
 
 	net_mgmt_init_event_callback(&l4_cb, l4_event_handler, L4_EVENT_MASK);
 	net_mgmt_add_event_callback(&l4_cb);
