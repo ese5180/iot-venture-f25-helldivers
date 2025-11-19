@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Horse GPS Dashboard</title>
+
+<!-- Leaflet 地图样式 -->
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+
+<style>
+    body {
+        font-family: Arial;
+        background: #f7f7f7;
+        padding: 20px;
+    }
+    #map {
+        height: 450px;
+        width: 100%;
+        border-radius: 10px;
+        margin-bottom: 20px;
+        box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+    }
+    #info-box {
+        background: white;
+        padding: 15px;
+        border-radius: 10px;
+        max-width: 600px;
+        margin: auto;
+        box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+    }
+</style>
+</head>
+<body>
+
+<h2>🐴 Horse Realtime GPS Dashboard</h2>
+<div id="map"></div>
+
+<div id="info-box">
+    <h3>Latest Data</h3>
+    <div id="latest"></div>
+</div>
+
+<!-- Leaflet JS -->
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+<script>
+const API_URL = "https://36my08rvv4.execute-api.us-east-1.amazonaws.com/horse-data";
+
+// 创建地图，初始中心点随便给一个
+let map = L.map('map').setView([39.95, -75.19], 14);
+
+// 使用开源 OpenStreetMap 作为底图
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    maxZoom: 19,
+}).addTo(map);
+
+let marker = null;
+let pathLine = null;
+let gpsHistory = [];  // 保存轨迹点
+
+async function loadData() {
+    try {
+        const resp = await fetch(API_URL);
+        const data = await resp.json();
+
+        if (!Array.isArray(data) || data.length === 0) return;
+
+        const newest = data[0].payload;
+
+        // 还原 GPS
+        const lat = newest.latitude / 1_000_000;
+        const lon = newest.longitude / 1_000_000;
+
+        document.getElementById("latest").innerHTML = `
+            <b>Temperature:</b> ${(newest.temperature / 100).toFixed(2)} °C<br>
+            <b>Moisture:</b> ${(newest.moisture / 100).toFixed(2)} %<br>
+            <b>Pitch:</b> ${(newest.pitch / 100).toFixed(2)} °<br>
+            <b>Latitude:</b> ${lat.toFixed(6)}<br>
+            <b>Longitude:</b> ${lon.toFixed(6)}<br>
+            <b>Time:</b> ${new Date(newest.aws_timestamp).toLocaleString()}
+        `;
+
+        // 轨迹加入
+        gpsHistory.push([lat, lon]);
+
+        // 更新 Marker
+        if (!marker) {
+            marker = L.marker([lat, lon]).addTo(map)
+                .bindPopup("Horse Location");
+        } else {
+            marker.setLatLng([lat, lon]);
+        }
+
+        // 自动居中
+        map.setView([lat, lon]);
+
+        // 绘制轨迹线
+        if (pathLine) {
+            map.removeLayer(pathLine);
+        }
+        pathLine = L.polyline(gpsHistory, {color: 'red'}).addTo(map);
+
+    } catch (e) {
+        console.log("Error loading:", e);
+    }
+}
+
+loadData();
+setInterval(loadData, 5000);  // 每 5 秒刷新
+</script>
+
+</body>
+</html>
