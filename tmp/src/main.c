@@ -12,18 +12,72 @@
 #include <modem/modem_info.h>
 
 #include "json_payload.h"
-#include "horse_payload.h"
-#include <modem/nrf_modem_lib.h>
 
+#include <nrf_modem.h>
 #include <modem/lte_lc.h>
+///////////////////timestamp////////////////////////////
+#include <modem/at_cmd.h>
+#include <zephyr/sys/timeutil.h>
+static int64_t get_modem_timestamp(void)
+{
+    char resp[64];
+    int err;
 
+    /* 查询 LTE 网络时间 */
+    err = at_cmd_write("AT%XTIME?", resp, sizeof(resp), NULL);
+    if (err) {
+        printk("AT%%XTIME? failed: %d\n", err);
+        return -1;
+    }
 
+    char *p = strstr(resp, "%XTIME: ");
+    if (!p) {
+        printk("Unexpected XTIME response: %s\n", resp);
+        return -1;
+    }
+    p += 8; // skip "%XTIME: "
+
+    char buf[3] = {0};
+
+    buf[0] = p[0]; buf[1] = p[1];
+    int year = 2000 + atoi(buf);
+
+    buf[0] = p[2]; buf[1] = p[3];
+    int month = atoi(buf);
+
+    buf[0] = p[4]; buf[1] = p[5];
+    int day = atoi(buf);
+
+    buf[0] = p[6]; buf[1] = p[7];
+    int hour = atoi(buf);
+
+    buf[0] = p[8]; buf[1] = p[9];
+    int minute = atoi(buf);
+
+    buf[0] = p[10]; buf[1] = p[11];
+    int second = atoi(buf);
+
+    struct tm t = {
+        .tm_year = year - 1900,
+        .tm_mon  = month - 1,
+        .tm_mday = day,
+        .tm_hour = hour,
+        .tm_min  = minute,
+        .tm_sec  = second,
+    };
+
+    return (int64_t)timeutil_timegm(&t);
+}
+////////
+#include "horse_payload.h"
 void publish_horse_data(float temperature, float moisture, float pitch,
                         float gps_lat, float gps_lon)
 {
     char json_buf[256];
     struct horse_payload hp;
 
+    /* === 使用 modem 时间作为 timestamp === */
+    hp.timestamp = get_modem_timestamp();
 
     hp.temperature = (int32_t)(temperature * 100.0f);
     hp.moisture    = (int32_t)(moisture * 100.0f);
@@ -31,13 +85,11 @@ void publish_horse_data(float temperature, float moisture, float pitch,
     hp.latitude    = (int32_t)(gps_lat * 1000000.0f);
     hp.longitude   = (int32_t)(gps_lon * 1000000.0f);
 
-    /* 3. 构造 JSON 字符串 */
     if (horse_payload_construct(json_buf, sizeof(json_buf), &hp)) {
         printk("horse_payload_construct failed\n");
         return;
     }
 
-    /* 4. 发布 MQTT */
     struct aws_iot_data tx = { 0 };
     tx.qos       = MQTT_QOS_1_AT_LEAST_ONCE;
     tx.ptr       = json_buf;
@@ -45,9 +97,11 @@ void publish_horse_data(float temperature, float moisture, float pitch,
     tx.topic.str = "horse_data";
     tx.topic.len = strlen(tx.topic.str);
 
-    int err = aws_iot_send(&tx);
+    aws_iot_send(&tx);
     printk("horse_data sent: %s\n", json_buf);
 }
+
+
 
 LOG_MODULE_REGISTER(aws_iot_sample, CONFIG_AWS_IOT_SAMPLE_LOG_LEVEL);
 
