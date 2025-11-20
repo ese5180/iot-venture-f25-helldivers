@@ -2,9 +2,9 @@
 <html>
 <head>
 <meta charset="UTF-8">
-<title>Horse GPS Dashboard</title>
+<title>Horse Realtime GPS Dashboard</title>
 
-<!-- Leaflet 地图样式 -->
+<!-- Leaflet 地图 -->
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
 
 <style>
@@ -12,30 +12,48 @@
         font-family: Arial;
         background: #f7f7f7;
         padding: 20px;
+        text-align: center;
     }
+
     #map {
         height: 450px;
         width: 100%;
         border-radius: 10px;
-        margin-bottom: 20px;
+        margin-top: 20px;
         box-shadow: 0 4px 10px rgba(0,0,0,0.2);
     }
-    #info-box {
+
+    #latest-box {
         background: white;
-        padding: 15px;
+        padding: 20px;
+        width: 350px;
+        margin: 30px auto;
         border-radius: 10px;
-        max-width: 600px;
-        margin: auto;
-        box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+        box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+        text-align: left;
     }
+
+    #horse-img {
+        width: 120px;
+        height: auto;
+        margin-top: 10px;
+    }
+
 </style>
 </head>
 <body>
 
 <h2>🐴 Horse Realtime GPS Dashboard</h2>
+
+<!-- 动态马的姿态图 -->
+<img id="horse-img" src="" alt="Horse">
+<div id="posture-text" style="font-size: 20px; font-weight: bold; margin-top: 10px;">
+    Horse posture: Normal
+</div>
+
 <div id="map"></div>
 
-<div id="info-box">
+<div id="latest-box">
     <h3>Latest Data</h3>
     <div id="latest"></div>
 </div>
@@ -46,67 +64,89 @@
 <script>
 const API_URL = "https://36my08rvv4.execute-api.us-east-1.amazonaws.com/horse-data";
 
-// 创建地图，初始中心点随便给一个
+/* 你的马姿态图片（不会404） */
+const IMG_NORMAL = "https://i.imgur.com/6YVxZ1z.png";    
+const IMG_LEFT   = "https://i.imgur.com/9YEaN7J.png";    
+const IMG_RIGHT  = "https://i.imgur.com/uO7b51S.png";   
+
 let map = L.map('map').setView([39.95, -75.19], 14);
 
-// 使用开源 OpenStreetMap 作为底图
 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
     maxZoom: 19,
 }).addTo(map);
 
 let marker = null;
 let pathLine = null;
-let gpsHistory = [];  // 保存轨迹点
+let gpsHistory = [];
+
+/* 姿态转换文字 */
+function getPostureText(pitch) {
+    switch (pitch) {
+        case 1: return "Leaning Left";
+        case 2: return "Leaning Right";
+        default: return "Normal";
+    }
+}
+
+/* 姿态选择图片 */
+function getHorseImage(pitch) {
+    switch (pitch) {
+        case 1: return IMG_LEFT;
+        case 2: return IMG_RIGHT;
+        default: return IMG_NORMAL;
+    }
+}
 
 async function loadData() {
     try {
         const resp = await fetch(API_URL);
-        const data = await resp.json();
+        const list = await resp.json();
+        if (!Array.isArray(list) || list.length === 0) return;
 
-        if (!Array.isArray(data) || data.length === 0) return;
+        const newest = list[0].payload;
 
-        const newest = data[0].payload;
+        /* pitch 现在是状态值，不除以100 */
+        const pitch = newest.pitch;
 
-        // 还原 GPS
         const lat = newest.latitude / 1_000_000;
         const lon = newest.longitude / 1_000_000;
 
+        /* 更新姿态图标 & 文字 */
+        document.getElementById("horse-img").src = getHorseImage(pitch);
+        document.getElementById("posture-text").innerText = "Horse posture: " + getPostureText(pitch);
+
+        /* 显示最新数据（不再除100） */
         document.getElementById("latest").innerHTML = `
             <b>Temperature:</b> ${(newest.temperature / 100).toFixed(2)} °C<br>
             <b>Moisture:</b> ${(newest.moisture / 100).toFixed(2)} %<br>
-            <b>Pitch:</b> ${(newest.pitch / 100).toFixed(2)} °<br>
+            <b>Pitch:</b> ${pitch} (${getPostureText(pitch)})<br>
+            <b>Water Flag:</b> ${newest.water_flag}<br>
+            <b>Water Time:</b> ${newest.water_time} sec<br>
             <b>Latitude:</b> ${lat.toFixed(6)}<br>
             <b>Longitude:</b> ${lon.toFixed(6)}<br>
             <b>Time:</b> ${new Date(newest.aws_timestamp).toLocaleString()}
         `;
 
-        // 轨迹加入
         gpsHistory.push([lat, lon]);
 
-        // 更新 Marker
         if (!marker) {
-            marker = L.marker([lat, lon]).addTo(map)
-                .bindPopup("Horse Location");
+            marker = L.marker([lat, lon]).addTo(map);
         } else {
             marker.setLatLng([lat, lon]);
         }
 
-        // 自动居中
         map.setView([lat, lon]);
 
-        // 绘制轨迹线
-        if (pathLine) {
-            map.removeLayer(pathLine);
-        }
-        pathLine = L.polyline(gpsHistory, {color: 'red'}).addTo(map);
+        if (pathLine) map.removeLayer(pathLine);
+        pathLine = L.polyline(gpsHistory, {color: "red"}).addTo(map);
 
-    } catch (e) {
-        console.log("Error loading:", e);
+    } catch (err) {
+        console.log("load error:", err);
     }
 }
 
 loadData();
-setInterval(loadData, 5000);  // 每 5 秒刷新
+setInterval(loadData, 4000);
 </script>
 
 </body>

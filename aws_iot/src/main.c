@@ -19,25 +19,28 @@
 
 
 void publish_horse_data(float temperature, float moisture, float pitch,
-                        float gps_lat, float gps_lon)
+                        float gps_lat, float gps_lon,
+                        int water_flag, int water_time)
 {
     char json_buf[256];
     struct horse_payload hp;
 
+    /* new fields */
+    hp.water_flag = water_flag;
+    hp.water_time = water_time;
 
+    /* existing fields */
     hp.temperature = (int32_t)(temperature * 100.0f);
     hp.moisture    = (int32_t)(moisture * 100.0f);
     hp.pitch       = (int32_t)(pitch * 100.0f);
     hp.latitude    = (int32_t)(gps_lat * 1000000.0f);
     hp.longitude   = (int32_t)(gps_lon * 1000000.0f);
 
-    /* 3. 构造 JSON 字符串 */
     if (horse_payload_construct(json_buf, sizeof(json_buf), &hp)) {
         printk("horse_payload_construct failed\n");
         return;
     }
 
-    /* 4. 发布 MQTT */
     struct aws_iot_data tx = { 0 };
     tx.qos       = MQTT_QOS_1_AT_LEAST_ONCE;
     tx.ptr       = json_buf;
@@ -48,6 +51,7 @@ void publish_horse_data(float temperature, float moisture, float pitch,
     int err = aws_iot_send(&tx);
     printk("horse_data sent: %s\n", json_buf);
 }
+
 
 LOG_MODULE_REGISTER(aws_iot_sample, CONFIG_AWS_IOT_SAMPLE_LOG_LEVEL);
 
@@ -244,6 +248,9 @@ static void on_aws_iot_evt_connected(const struct aws_iot_evt *const evt)
     float gps_lon     = -75.193456f;
 
     /* Convert to integers */
+    int water_flag = 1;   // example
+    int water_time = 13;  // example seconds
+
     int32_t temp_i = (int32_t)(temperature * 100.0f);
     int32_t moist_i = (int32_t)(moisture * 100.0f);
     int32_t pitch_i = (int32_t)(pitch * 100.0f);
@@ -256,7 +263,9 @@ static void on_aws_iot_evt_connected(const struct aws_iot_evt *const evt)
            temp_i, moist_i, pitch_i, lat_i, lon_i);
 
     /* Publish integer version */
-    publish_horse_data(temperature, moisture, pitch, gps_lat, gps_lon);
+    publish_horse_data(temperature, moisture, pitch,
+                   gps_lat, gps_lon,
+                   water_flag, water_time);
 
     (void)k_work_reschedule(&shadow_update_work, K_NO_WAIT);
 }

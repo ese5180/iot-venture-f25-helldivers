@@ -5,7 +5,8 @@
 LOG_MODULE_REGISTER(horse_payload, LOG_LEVEL_INF);
 
 static const struct json_obj_descr horse_desc[] = {
-    //JSON_OBJ_DESCR_PRIM(struct horse_payload, timestamp,    JSON_TOK_NUMBER),
+    JSON_OBJ_DESCR_PRIM(struct horse_payload, water_flag,    JSON_TOK_NUMBER),
+    JSON_OBJ_DESCR_PRIM(struct horse_payload, water_time,    JSON_TOK_NUMBER),
     JSON_OBJ_DESCR_PRIM(struct horse_payload, temperature,  JSON_TOK_NUMBER),
     JSON_OBJ_DESCR_PRIM(struct horse_payload, moisture,     JSON_TOK_NUMBER),
     JSON_OBJ_DESCR_PRIM(struct horse_payload, pitch,        JSON_TOK_NUMBER),

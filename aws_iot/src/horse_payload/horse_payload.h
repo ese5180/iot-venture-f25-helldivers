@@ -4,7 +4,8 @@
 #include <stdint.h>
 
 struct horse_payload {
-    //int64_t timestamp;    // Unix time (seconds)
+    int64_t water_flag; 
+    int64_t water_time;    
     int32_t temperature;  // scaled by 100
     int32_t moisture;     // scaled by 100
     int32_t pitch;        // scaled by 100
