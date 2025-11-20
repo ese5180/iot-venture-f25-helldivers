@@ -23,107 +23,196 @@
         box-shadow: 0 4px 10px rgba(0,0,0,0.2);
     }
 
-    #latest-box {
+    #horse-box {
+        width: 220px;
+        margin: 0 auto;
+        height: 220px;
+    }
+
+    svg {
+        width: 220px;
+        height: 220px;
+        transition: transform 0.4s ease;
+    }
+
+    /* =====================================================
+        🐎 动画 01：奔跑抖动（上下）
+    =====================================================*/
+    @keyframes runBounce {
+        0%   { transform: translateY(0px); }
+        50%  { transform: translateY(-12px); }
+        100% { transform: translateY(0px); }
+    }
+
+    .run {
+        animation: runBounce 0.45s infinite ease-in-out;
+    }
+
+    /* =====================================================
+        🐎 动画 02：眨眼（眼白不动，眼皮压下去）
+    =====================================================*/
+    @keyframes blink {
+        0%, 90%, 100% { ry: 8; }
+        92% { ry: 1; }
+        94% { ry: 8; }
+    }
+
+    .blink {
+        animation: blink 5s infinite;
+    }
+
+    /* =====================================================
+        🐎 动画 03：眼睛抖动（跑步时更可爱）
+    =====================================================*/
+    @keyframes eyeShake {
+        0%   { transform: translate(0px, 0px); }
+        50%  { transform: translate(0px, -2px); }
+        100% { transform: translate(0px, 0px); }
+    }
+
+    .eye-shake {
+        animation: eyeShake 0.25s infinite ease-in-out;
+    }
+
+    /* =====================================================
+        🐎 倾斜旋转（整匹马）
+    =====================================================*/
+    .tilt-left {
+        transform: rotate(-18deg);
+    }
+
+    .tilt-right {
+        transform: rotate(18deg);
+    }
+
+    #data-box {
         background: white;
-        padding: 20px;
-        width: 350px;
-        margin: 30px auto;
+        padding: 15px;
         border-radius: 10px;
-        box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+        width: 400px;
+        margin: 20px auto;
         text-align: left;
+        box-shadow: 0 4px 10px rgba(0,0,0,0.2);
     }
-
-    #horse-img {
-        width: 120px;
-        height: auto;
-        margin-top: 10px;
-    }
-
 </style>
 </head>
 <body>
 
 <h2>🐴 Horse Realtime GPS Dashboard</h2>
 
-<!-- 动态马的姿态图 -->
-<img id="horse-img" src="" alt="Horse">
-<div id="posture-text" style="font-size: 20px; font-weight: bold; margin-top: 10px;">
-    Horse posture: Normal
+<!-- 🐎 马的 SVG 动画 -->
+<div id="horse-box">
+    <svg id="horse" viewBox="0 0 200 200">
+
+        <!-- 身体 -->
+        <ellipse cx="100" cy="150" rx="55" ry="25" fill="#8b4513"/>
+        <circle cx="100" cy="80" r="45" fill="#a0522d"/>
+
+        <!-- 左眼（白） -->
+        <ellipse id="eyeL" cx="80" cy="70" rx="8" ry="8" fill="white" />
+        <!-- 左眼黑点 -->
+        <circle id="pupilL" cx="80" cy="70" r="4" fill="black"/>
+
+        <!-- 右眼（白） -->
+        <ellipse id="eyeR" cx="120" cy="70" rx="8" ry="8" fill="white" />
+        <!-- 右眼黑点 -->
+        <circle id="pupilR" cx="120" cy="70" r="4" fill="black"/>
+
+        <!-- 耳朵 -->
+        <path d="M75 55 Q60 20 90 30" stroke="#5c3317" stroke-width="8" fill="none"/>
+
+        <!-- 腿 -->
+        <rect x="70" y="120" width="20" height="50" fill="#5c3317"/>
+        <rect x="90" y="120" width="20" height="50" fill="#5c3317"/>
+        <rect x="110" y="120" width="20" height="50" fill="#5c3317"/>
+    </svg>
 </div>
 
+<h3 id="posture-text">Horse posture: Normal</h3>
+
+<!-- 地图 -->
 <div id="map"></div>
 
-<div id="latest-box">
+<!-- 数据显示 -->
+<div id="data-box">
     <h3>Latest Data</h3>
     <div id="latest"></div>
 </div>
 
-<!-- Leaflet JS -->
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
 <script>
 const API_URL = "https://36my08rvv4.execute-api.us-east-1.amazonaws.com/horse-data";
 
-/* 你的马姿态图片（不会404） */
-const IMG_NORMAL = "https://i.imgur.com/6YVxZ1z.png";    
-const IMG_LEFT   = "https://i.imgur.com/9YEaN7J.png";    
-const IMG_RIGHT  = "https://i.imgur.com/uO7b51S.png";   
-
+// Leaflet 地图
 let map = L.map('map').setView([39.95, -75.19], 14);
-
-L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    maxZoom: 19,
-}).addTo(map);
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19 }).addTo(map);
 
 let marker = null;
 let pathLine = null;
 let gpsHistory = [];
 
-/* 姿态转换文字 */
-function getPostureText(pitch) {
-    switch (pitch) {
-        case 1: return "Leaning Left";
-        case 2: return "Leaning Right";
-        default: return "Normal";
-    }
-}
+const horse = document.getElementById("horse");
+const postureText = document.getElementById("posture-text");
 
-/* 姿态选择图片 */
-function getHorseImage(pitch) {
-    switch (pitch) {
-        case 1: return IMG_LEFT;
-        case 2: return IMG_RIGHT;
-        default: return IMG_NORMAL;
-    }
-}
+// 眼睛元素
+const eyeL = document.getElementById("eyeL");
+const eyeR = document.getElementById("eyeR");
+const pupilL = document.getElementById("pupilL");
+const pupilR = document.getElementById("pupilR");
 
 async function loadData() {
     try {
         const resp = await fetch(API_URL);
-        const list = await resp.json();
-        if (!Array.isArray(list) || list.length === 0) return;
+        const data = await resp.json();
 
-        const newest = list[0].payload;
+        if (!Array.isArray(data) || data.length === 0) return;
 
-        /* pitch 现在是状态值，不除以100 */
-        const pitch = newest.pitch;
+        const newest = data[0].payload;
 
+        let pitch = newest.pitch;
+
+        // ======== 清除所有动画 class ========
+        horse.classList.remove("tilt-left", "tilt-right", "run");
+        eyeL.classList.remove("eye-shake");
+        eyeR.classList.remove("eye-shake");
+        pupilL.classList.remove("eye-shake");
+        pupilR.classList.remove("eye-shake");
+
+        // ======== 姿态判断 ========
+        if (pitch === 1) {
+            postureText.textContent = "Horse posture: Leaning Left";
+            horse.classList.add("tilt-left");
+        } else if (pitch === 2) {
+            postureText.textContent = "Horse posture: Leaning Right";
+            horse.classList.add("tilt-right");
+        } else {
+            postureText.textContent = "Horse posture: Running";
+            horse.classList.add("run");
+
+            // 跑步时眼睛轻微抖动
+            eyeL.classList.add("eye-shake");
+            eyeR.classList.add("eye-shake");
+            pupilL.classList.add("eye-shake");
+            pupilR.classList.add("eye-shake");
+        }
+
+        // ======== 眨眼动画（眼白） ========
+        eyeL.classList.add("blink");
+        eyeR.classList.add("blink");
+
+        // ======== GPS 还原 ========
         const lat = newest.latitude / 1_000_000;
         const lon = newest.longitude / 1_000_000;
 
-        /* 更新姿态图标 & 文字 */
-        document.getElementById("horse-img").src = getHorseImage(pitch);
-        document.getElementById("posture-text").innerText = "Horse posture: " + getPostureText(pitch);
-
-        /* 显示最新数据（不再除100） */
         document.getElementById("latest").innerHTML = `
             <b>Temperature:</b> ${(newest.temperature / 100).toFixed(2)} °C<br>
             <b>Moisture:</b> ${(newest.moisture / 100).toFixed(2)} %<br>
-            <b>Pitch:</b> ${pitch} (${getPostureText(pitch)})<br>
+            <b>Pitch:</b> ${pitch}<br>
             <b>Water Flag:</b> ${newest.water_flag}<br>
             <b>Water Time:</b> ${newest.water_time} sec<br>
-            <b>Latitude:</b> ${lat.toFixed(6)}<br>
-            <b>Longitude:</b> ${lon.toFixed(6)}<br>
+            <b>Latitude:</b> ${lat}<br>
+            <b>Longitude:</b> ${lon}<br>
             <b>Time:</b> ${new Date(newest.aws_timestamp).toLocaleString()}
         `;
 
@@ -135,13 +224,12 @@ async function loadData() {
             marker.setLatLng([lat, lon]);
         }
 
+        if (pathLine) map.removeLayer(pathLine);
+        pathLine = L.polyline(gpsHistory, { color: "red" }).addTo(map);
         map.setView([lat, lon]);
 
-        if (pathLine) map.removeLayer(pathLine);
-        pathLine = L.polyline(gpsHistory, {color: "red"}).addTo(map);
-
     } catch (err) {
-        console.log("load error:", err);
+        console.log("Error loading horse data:", err);
     }
 }
 
