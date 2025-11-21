@@ -1,5 +1,5 @@
 /*
- * Horse balance + BME280 demo
+ * Horse balance (BNO055) + BME280 env sensor
  */
 
 #include <zephyr/kernel.h>
@@ -12,271 +12,321 @@
 
 LOG_MODULE_REGISTER(app, LOG_LEVEL_INF);
 
-#include "horse_balance.h"
-
 /* ==================== BNO055（平衡仪）部分 ==================== */
 
-#define BNO_ADDR        0x28   // 如果 ADR 接到 VDD 改 0x29
 #define REG_CHIP_ID     0x00
 #define REG_OPR_MODE    0x3D
 #define REG_PWR_MODE    0x3E
 #define MODE_CONFIG     0x00
 #define MODE_NDOF       0x0C
-#define REG_EUL_H_L     0x1A   // heading L, then roll, pitch
+#define REG_EUL_H_L     0x1A   /* heading L, then roll, pitch */
 
-/* 在 overlay 里要有：
- * bno055: bno055@28 {
- *     compatible = "bosch,bno055";
- *     reg = <0x28>;
- *     ...
+/* overlay 里要有：
+ * &i2c2 {
+ *     status = "okay";
+ *
+ *     bno055: bno055@28 {
+ *         compatible = "bosch,bno055";
+ *         reg = <0x28>;
+ *         label = "BNO055";
+ *         status = "okay";
+ *     };
  * };
  */
 static const struct i2c_dt_spec bno = I2C_DT_SPEC_GET(DT_NODELABEL(bno055));
 
-static int wr8(uint8_t reg, uint8_t val)
+static int bno_wr8(uint8_t reg, uint8_t val)
 {
-    uint8_t buf[2] = { reg, val };
-    return i2c_write_dt(&bno, buf, 2);
+	uint8_t buf[2] = { reg, val };
+	return i2c_write_dt(&bno, buf, sizeof(buf));
 }
 
-static int rd(uint8_t reg, uint8_t *buf, size_t len)
+static int bno_rd(uint8_t reg, uint8_t *buf, size_t len)
 {
-    return i2c_write_read_dt(&bno, &reg, 1, buf, len);
+	return i2c_write_read_dt(&bno, &reg, 1, buf, len);
 }
 
-/* ==================== BME280（温湿度/气压）部分 ==================== */
+/* ==================== BME280（温湿度 / 气压）线程 ==================== */
 
-/* 从 devicetree 拿到我们在 overlay 里起名的 bme280 节点 */
+/* overlay 里要有：
+ *     bme280: bme280@77 {
+ *         compatible = "bosch,bme280";
+ *         reg = <0x77>;
+ *         label = "BME280";
+ *         status = "okay";
+ *     };
+ */
 #define BME280_NODE DT_NODELABEL(bme280)
 static const struct device *const bme280_dev = DEVICE_DT_GET(BME280_NODE);
-static const struct i2c_dt_spec bme_i2c = I2C_DT_SPEC_GET(BME280_NODE);
 
-/* 把 struct sensor_value 打印成 “整数.三位小数” */
+/* 把 struct sensor_value 转成 "整数.三位小数" 打印 */
 static void print_sensor_value(const char *name,
-                               const struct sensor_value *val,
-                               const char *unit)
+			       const struct sensor_value *val,
+			       const char *unit)
 {
-    /* val1: 整数部分, val2: 小数部分(1e-6) */
-    int32_t whole = val->val1;
-    int32_t frac  = val->val2;  /* 10^-6 */
+	/* val1: 整数部分, val2: 小数部分(1e-6) */
+	int32_t whole = val->val1;
+	int32_t frac  = val->val2; /* 10^-6 */
 
-    /* 转成 milli 单位，方便格式化 */
-    int32_t milli = whole * 1000 + frac / 1000;
+	int32_t milli = whole * 1000 + frac / 1000;
 
-    int32_t int_part  = milli / 1000;
-    int32_t frac_part = milli % 1000;
-    if (frac_part < 0) {
-        frac_part = -frac_part;
-    }
+	int32_t int_part  = milli / 1000;
+	int32_t frac_part = milli % 1000;
+	if (frac_part < 0) {
+		frac_part = -frac_part;
+	}
 
-    LOG_INF("%s = %d.%03d %s", name, int_part, frac_part, unit);
+	LOG_INF("%s = %d.%03d %s", name, int_part, frac_part, unit);
 }
 
-/* ==================== 主程序 ==================== */
+/* BME280 独立线程：照官方 demo 写法 */
+static void bme280_thread(void *p1, void *p2, void *p3)
+{
+	ARG_UNUSED(p1);
+	ARG_UNUSED(p2);
+	ARG_UNUSED(p3);
+
+	if (!device_is_ready(bme280_dev)) {
+		LOG_ERR("BME280 device not ready");
+		return;
+	}
+
+	LOG_INF("BME280 thread start");
+
+	struct sensor_value temp, hum, press;
+	int ret;
+
+	while (1) {
+		/* 触发采样 */
+		ret = sensor_sample_fetch(bme280_dev);
+		if (ret) {
+			LOG_ERR("BME280: sensor_sample_fetch failed (%d)", ret);
+			k_sleep(K_SECONDS(1));
+			continue;
+		}
+
+		/* 温度 */
+		ret = sensor_channel_get(bme280_dev, SENSOR_CHAN_AMBIENT_TEMP, &temp);
+		if (ret == 0) {
+			print_sensor_value("Temperature", &temp, "degC");
+		} else {
+			LOG_ERR("Read temperature failed (%d)", ret);
+		}
+
+		/* 湿度 */
+		ret = sensor_channel_get(bme280_dev, SENSOR_CHAN_HUMIDITY, &hum);
+		if (ret == 0) {
+			print_sensor_value("Humidity", &hum, "%%");
+		} else {
+			LOG_ERR("Read humidity failed (%d)", ret);
+		}
+
+		/* 气压 */
+		ret = sensor_channel_get(bme280_dev, SENSOR_CHAN_PRESS, &press);
+		if (ret == 0) {
+			print_sensor_value("Pressure", &press, "kPa");
+		} else {
+			LOG_ERR("Read pressure failed (%d)", ret);
+		}
+
+		/* 每秒跑一次 */
+		k_sleep(K_SECONDS(1));
+	}
+}
+
+/* 线程创建：栈 2048、优先级 5（比 BNO 线程低一点） */
+K_THREAD_DEFINE(bme280_thread_id,
+		2048,
+		bme280_thread,
+		NULL, NULL, NULL,
+		5, 0, 0);
+
+/* ==================== BNO055：马背平衡线程 ==================== */
+
+typedef enum {
+	STATE_NORMAL = 0,
+	STATE_LEFT,   /* 向左倾 */
+	STATE_RIGHT,  /* 向右倾 */
+	STATE_FRONT,  /* 向前倾 */
+	STATE_HIND    /* 向后倾 */
+} balance_state_t;
+
+static void bno055_thread(void *p1, void *p2, void *p3)
+{
+	ARG_UNUSED(p1);
+	ARG_UNUSED(p2);
+	ARG_UNUSED(p3);
+
+	if (!device_is_ready(bno.bus)) {
+		LOG_ERR("I2C bus for BNO055 not ready");
+		return;
+	}
+
+	/* 读 CHIP ID 确认芯片在总线上 */
+	uint8_t id = 0;
+	int ret = bno_rd(REG_CHIP_ID, &id, 1);
+	if (ret) {
+		LOG_ERR("BNO055 read CHIP_ID failed (%d)", ret);
+		return;
+	}
+	if (id != 0xA0) {
+		LOG_ERR("BNO055 not found, id=0x%02X", id);
+		return;
+	}
+	LOG_INF("BNO055 OK, id=0x%02X", id);
+
+	/* 配置 BNO055：进入配置模式 -> 正常供电 -> NDOF */
+	ret = bno_wr8(REG_OPR_MODE, MODE_CONFIG);
+	if (ret) {
+		LOG_ERR("BNO055 set CONFIG mode failed (%d)", ret);
+		return;
+	}
+	k_msleep(20);
+
+	ret = bno_wr8(REG_PWR_MODE, 0x00);
+	if (ret) {
+		LOG_ERR("BNO055 set PWR_MODE failed (%d)", ret);
+		return;
+	}
+	k_msleep(10);
+
+	ret = bno_wr8(REG_OPR_MODE, MODE_NDOF);
+	if (ret) {
+		LOG_ERR("BNO055 set NDOF mode failed (%d)", ret);
+		return;
+	}
+	k_msleep(50);
+
+	/* ====== 马背平衡监控参数 ====== */
+
+	const float LR_THRESH   = 15.0f; /* 左右阈值 (deg) */
+	const float FH_THRESH   = 15.0f; /* 前后阈值 (deg) */
+	const uint8_t MIN_SAMPLES = 10;  /* 连续多少帧超限才认为失衡 ≈ 1s */
+
+	bool first_sample = true;
+	balance_state_t last_state = STATE_NORMAL;
+
+	/* baseline：第一次读到的 roll / pitch 作为 0 点 */
+	float roll0  = 0.0f;
+	float pitch0 = 0.0f;
+
+	/* 去抖计数 + 方向 */
+	uint8_t lr_over_cnt = 0;
+	uint8_t fh_over_cnt = 0;
+	int lr_dir = 0;  /* -1=左, +1=右 */
+	int fh_dir = 0;  /* -1=前, +1=后 */
+
+	/* 主循环：100ms 一帧 */
+	while (1) {
+		uint8_t raw[6];
+
+		ret = bno_rd(REG_EUL_H_L, raw, sizeof(raw));
+		if (ret) {
+			LOG_ERR("BNO055 read EUL failed (%d)", ret);
+			k_msleep(100);
+			continue;
+		}
+
+		int16_t heading_raw = (int16_t)((raw[1] << 8) | raw[0]);
+		int16_t roll_raw    = (int16_t)((raw[3] << 8) | raw[2]);
+		int16_t pitch_raw   = (int16_t)((raw[5] << 8) | raw[4]);
+
+		float heading = heading_raw / 16.0f;
+		float roll    = roll_raw    / 16.0f;
+		float pitch   = pitch_raw   / 16.0f;
+		(void)heading; /* 暂时不用 heading，避免编译警告 */
+
+		if (first_sample) {
+			/* 第一次采样：记录基准，只打印一次 baseline */
+			roll0  = roll;
+			pitch0 = pitch;
+			first_sample = false;
+			last_state = STATE_NORMAL;
+
+			LOG_INF("Normal baseline set: roll0=%.2f, pitch0=%.2f",
+				(double)roll0, (double)pitch0);
+		} else {
+			/* 相对 baseline 的偏移 */
+			float d_roll  = roll  - roll0;   /* 左右 */
+			float d_pitch = pitch - pitch0;  /* 前后 */
+
+			bool lr_over = fabsf(d_roll)  > LR_THRESH;
+			bool fh_over = fabsf(d_pitch) > FH_THRESH;
+
+			/* 左右方向的“连续超限”计数 */
+			if (lr_over) {
+				lr_dir = (d_roll < 0.0f) ? -1 : +1;
+				if (lr_over_cnt < 255) {
+					lr_over_cnt++;
+				}
+			} else {
+				lr_over_cnt = 0;
+			}
+
+			/* 前后方向的“连续超限”计数 */
+			if (fh_over) {
+				fh_dir = (d_pitch < 0.0f) ? -1 : +1;
+				if (fh_over_cnt < 255) {
+					fh_over_cnt++;
+				}
+			} else {
+				fh_over_cnt = 0;
+			}
+
+			/* 根据连续计数 + 方向 来判定当前状态 */
+			balance_state_t cur_state = STATE_NORMAL;
+
+			if (lr_over_cnt >= MIN_SAMPLES &&
+			    lr_over_cnt >= fh_over_cnt) {
+				cur_state = (lr_dir < 0) ? STATE_LEFT : STATE_RIGHT;
+			} else if (fh_over_cnt >= MIN_SAMPLES) {
+				cur_state = (fh_dir < 0) ? STATE_FRONT : STATE_HIND;
+			}
+
+			/* 在正常范围内，每帧打一条 Normal（你可以以后改成降低频率） */
+			if (cur_state == STATE_NORMAL) {
+				LOG_INF("Normal");
+			}
+
+			/* 只有进入某个失衡状态时，打一条 warning */
+			if (cur_state != last_state && cur_state != STATE_NORMAL) {
+				switch (cur_state) {
+				case STATE_LEFT:
+					LOG_WRN("Left–right imbalance: leaning left");
+					break;
+				case STATE_RIGHT:
+					LOG_WRN("Left–right imbalance: leaning right");
+					break;
+				case STATE_FRONT:
+					LOG_WRN("Front–hind imbalance: front-heavy (leaning forward)");
+					break;
+				case STATE_HIND:
+					LOG_WRN("Front–hind imbalance: hind-heavy (leaning backward)");
+					break;
+				default:
+					break;
+				}
+			}
+
+			last_state = cur_state;
+		}
+
+		/* 100 ms 一帧 */
+		k_msleep(100);
+	}
+}
+
+/* BNO055 线程：栈 2048、优先级 4（比 BME 高一点） */
+K_THREAD_DEFINE(bno055_thread_id,
+		2048,
+		bno055_thread,
+		NULL, NULL, NULL,
+		4, 0, 0);
+
+/* ==================== main：只负责启动 ==================== */
 
 void main(void)
 {
-    /* -------- 1) 初始化 BNO055（平衡仪） -------- */
-    if (!device_is_ready(bno.bus)) {
-        LOG_ERR("I2C bus not ready");
-        return;
-    }
-
-    uint8_t id = 0;
-    if (rd(REG_CHIP_ID, &id, 1) || id != 0xA0) {
-        LOG_ERR("BNO055 not found, id=0x%02X", id);
-        return;
-    }
-    LOG_INF("BNO055 OK, id=0x%02X", id);
-
-    /* 配置 -> 正常供电 -> NDOF */
-    wr8(REG_OPR_MODE, MODE_CONFIG);
-    k_msleep(20);
-    wr8(REG_PWR_MODE, 0x00);
-    k_msleep(10);
-    wr8(REG_OPR_MODE, MODE_NDOF);
-    k_msleep(50);
-
-    /* ===== 初始化马背平衡监控 ===== */
-    horse_balance_t hb;
-    /* 阈值：左右 15°，前后 15°，你后面可以自己调 */
-    horse_balance_init(&hb, 15.0f, 15.0f);
-
-    LOG_INF("Horse balance monitor ready (LR>=%.1f deg, FH>=%.1f deg)",
-            hb.lr_thresh_deg, hb.fh_thresh_deg);
-
-    /* ===== 状态检测参数 ===== */
-    bool first_sample = true;
-
-    typedef enum {
-        STATE_NORMAL = 0,
-        STATE_LEFT,   // 向左倾
-        STATE_RIGHT,  // 向右倾
-        STATE_FRONT,  // 向前倾
-        STATE_HIND    // 向后倾
-    } balance_state_t;
-
-    balance_state_t last_state = STATE_NORMAL;
-
-    /* 连续超限计数（防抖） */
-    uint8_t lr_over_cnt = 0;
-    uint8_t fh_over_cnt = 0;
-    int lr_dir = 0;  // -1 = 左, +1 = 右
-    int fh_dir = 0;  // -1 = 前, +1 = 后
-
-    const float LR_THRESH = 15.0f;   // 左右阈值
-    const float FH_THRESH = 15.0f;   // 前后阈值
-
-    /* 连续多少帧超限才判定失衡：10 帧 × 100ms ≈ 1s */
-    const uint8_t MIN_SAMPLES = 10;
-
-    /* -------- 2) 初始化 BME280（温湿度/气压） -------- */
-    if (!device_is_ready(bme280_dev)) {
-        LOG_WRN("BME280 device not ready (will skip env data)");
-    } else {
-        LOG_INF("BME280 ready");
-    }
-
-    struct sensor_value temp, hum, press;
-    int ret;
-    uint32_t last_bme_ms = 0;   // 上一次 BME280 采样时间（1s 一次）
-
-    /* ==================== 主循环：100ms 一帧 ==================== */
-    while (1) {
-        /* -------- A) 读 BNO055，做平衡判定 -------- */
-        uint8_t raw[6];
-
-        if (!rd(REG_EUL_H_L, raw, sizeof(raw))) {
-            int16_t heading_raw = (int16_t)((raw[1] << 8) | raw[0]);
-            int16_t roll_raw    = (int16_t)((raw[3] << 8) | raw[2]);
-            int16_t pitch_raw   = (int16_t)((raw[5] << 8) | raw[4]);
-
-            float heading = heading_raw / 16.0f;
-            float roll    = roll_raw    / 16.0f;
-            float pitch   = pitch_raw   / 16.0f;
-            (void)heading;  // 暂时不用 heading，防止编译 warning
-
-            if (first_sample) {
-                /* 第一次采样：记录 baseline，只打一次 “Normal (baseline set...)” */
-                hb.roll0  = roll;
-                hb.pitch0 = pitch;
-                first_sample = false;
-                last_state = STATE_NORMAL;
-
-                LOG_INF("✅ Normal (baseline set: roll0=%.2f, pitch0=%.2f)",
-                        hb.roll0, hb.pitch0);
-            } else {
-                /* 相对 baseline 的偏移 */
-                float d_roll  = roll  - hb.roll0;   // 左右
-                float d_pitch = pitch - hb.pitch0;  // 前后
-
-                /* 本帧是否超限 */
-                bool lr_over = fabsf(d_roll)  > LR_THRESH;
-                bool fh_over = fabsf(d_pitch) > FH_THRESH;
-
-                /* 左右方向计数 */
-                if (lr_over) {
-                    lr_dir = (d_roll < 0.0f) ? -1 : +1;  // 约定：负=左，正=右
-                    if (lr_over_cnt < 255) {
-                        lr_over_cnt++;
-                    }
-                } else {
-                    lr_over_cnt = 0;
-                }
-
-                /* 前后方向计数 */
-                if (fh_over) {
-                    /* 约定：pitch < 0 = 偏前，pitch > 0 = 偏后 */
-                    fh_dir = (d_pitch < 0.0f) ? -1 : +1;
-                    if (fh_over_cnt < 255) {
-                        fh_over_cnt++;
-                    }
-                } else {
-                    fh_over_cnt = 0;
-                }
-
-                /* 根据“连续超限帧数 + 方向”决定当前状态 */
-                balance_state_t cur_state = STATE_NORMAL;
-
-                if (lr_over_cnt >= MIN_SAMPLES && lr_over_cnt >= fh_over_cnt) {
-                    cur_state = (lr_dir < 0) ? STATE_LEFT : STATE_RIGHT;
-                } else if (fh_over_cnt >= MIN_SAMPLES) {
-                    cur_state = (fh_dir < 0) ? STATE_FRONT : STATE_HIND;
-                }
-
-                /* 在正常范围内，每帧打印一次 Normal */
-                if (cur_state == STATE_NORMAL) {
-                    LOG_INF("✅ Normal");
-                }
-
-                /* 只有“进入某个失衡状态”时，打一条 warning */
-                if (cur_state != last_state && cur_state != STATE_NORMAL) {
-                    switch (cur_state) {
-                    case STATE_LEFT:
-                        LOG_WRN("⚠️ Left–right imbalance: leaning left");
-                        break;
-                    case STATE_RIGHT:
-                        LOG_WRN("⚠️ Left–right imbalance: leaning right");
-                        break;
-                    case STATE_FRONT:
-                        LOG_WRN("⚠️ Front–hind imbalance: front-heavy (leaning forward)");
-                        break;
-                    case STATE_HIND:
-                        LOG_WRN("⚠️ Front–hind imbalance: hind-heavy (leaning backward)");
-                        break;
-                    default:
-                        break;
-                    }
-                }
-
-                last_state = cur_state;
-            }
-        }
-
-        /* -------- B) 每 1 秒跑一次 BME280 逻辑 -------- */
-        if (device_is_ready(bme280_dev)) {
-            uint32_t now = k_uptime_get_32();
-            if (now - last_bme_ms >= 1000U) {   // 1 秒一次
-                last_bme_ms = now;
-
-                ret = sensor_sample_fetch(bme280_dev);
-                if (ret) {
-                    LOG_ERR("sensor_sample_fetch failed (%d)", ret);
-                } else {
-                    /* 温度 */
-                    ret = sensor_channel_get(bme280_dev,
-                                             SENSOR_CHAN_AMBIENT_TEMP,
-                                             &temp);
-                    if (ret == 0) {
-                        print_sensor_value("Temperature", &temp, "degC");
-                    } else {
-                        LOG_ERR("Read temperature failed (%d)", ret);
-                    }
-
-                    /* 湿度 */
-                    ret = sensor_channel_get(bme280_dev,
-                                             SENSOR_CHAN_HUMIDITY,
-                                             &hum);
-                    if (ret == 0) {
-                        print_sensor_value("Humidity", &hum, "%%");
-                    } else {
-                        LOG_ERR("Read humidity failed (%d)", ret);
-                    }
-
-                    /* 气压 */
-                    ret = sensor_channel_get(bme280_dev,
-                                             SENSOR_CHAN_PRESS,
-                                             &press);
-                    if (ret == 0) {
-                        print_sensor_value("Pressure", &press, "kPa");
-                    } else {
-                        LOG_ERR("Read pressure failed (%d)", ret);
-                    }
-                }
-            }
-        }
-
-        /* 平衡仪检测节奏：100 ms 一帧 */
-        k_msleep(100);
-    }
+	LOG_INF("Horse balance (BNO055) + BME280 app start");
+	/* 线程已经通过 K_THREAD_DEFINE 自动启动，这里不需要 while(1) */
 }
