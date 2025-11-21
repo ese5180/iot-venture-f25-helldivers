@@ -16,8 +16,11 @@
 #include <modem/nrf_modem_lib.h>
 
 #include <modem/lte_lc.h>
+/*===============================change code==========================*/
+static void horse_data_work_fn(struct k_work *work);
+K_WORK_DELAYABLE_DEFINE(horse_data_work, horse_data_work_fn);
 
-
+/*==========================================hores_data=======================================*/
 void publish_horse_data(float temperature, float moisture, float pitch,
                         float gps_lat, float gps_lon,
                         int water_flag, int water_time)
@@ -51,6 +54,27 @@ void publish_horse_data(float temperature, float moisture, float pitch,
     int err = aws_iot_send(&tx);
     printk("horse_data sent: %s\n", json_buf);
 }
+
+/* ================= hores_data update work ================= */
+static void horse_data_work_fn(struct k_work *work)
+{
+    float temperature = 23.5f;
+    float moisture    = 56.7f;
+    float pitch       = 12.8f;
+    float gps_lat     = 39.952213f;
+    float gps_lon     = -75.193456f;
+
+    int water_flag = 1;
+    int water_time = 10;
+
+    publish_horse_data(temperature, moisture, pitch,
+                       gps_lat, gps_lon,
+                       water_flag, water_time);
+
+    /* 10 秒后再次执行 */
+    k_work_reschedule(&horse_data_work, K_SECONDS(10));
+}
+
 
 
 LOG_MODULE_REGISTER(aws_iot_sample, CONFIG_AWS_IOT_SAMPLE_LOG_LEVEL);
@@ -241,33 +265,11 @@ static void on_aws_iot_evt_connected(const struct aws_iot_evt *const evt)
 #if defined(CONFIG_BOOTLOADER_MCUBOOT)
     boot_write_img_confirmed();
 #endif
-    float temperature = 23.5f;
-    float moisture    = 56.7f;
-    float pitch       = 12.8f;
-    float gps_lat     = 39.952213f;
-    float gps_lon     = -75.193456f;
-
-    /* Convert to integers */
-    int water_flag = 1;   // example
-    int water_time = 13;  // example seconds
-
-    int32_t temp_i = (int32_t)(temperature * 100.0f);
-    int32_t moist_i = (int32_t)(moisture * 100.0f);
-    int32_t pitch_i = (int32_t)(pitch * 100.0f);
-    int32_t lat_i = (int32_t)(gps_lat * 1000000.0f);
-    int32_t lon_i = (int32_t)(gps_lon * 1000000.0f);
-
-    /* Print both raw and converted */
-    printk("RAW BEFORE SEND:\n");
-    printk("  int     t=%d  m=%d  p=%d  lat=%d  lon=%d\n",
-           temp_i, moist_i, pitch_i, lat_i, lon_i);
-
-    /* Publish integer version */
-    publish_horse_data(temperature, moisture, pitch,
-                   gps_lat, gps_lon,
-                   water_flag, water_time);
+    
 
     (void)k_work_reschedule(&shadow_update_work, K_NO_WAIT);
+
+    k_work_reschedule(&horse_data_work, K_SECONDS(10));
 }
 
 static void on_aws_iot_evt_disconnected(void)
@@ -343,6 +345,9 @@ static void connectivity_event_handler(struct net_mgmt_event_callback *cb,
     }
 }
 
+
+
+
 /* ============================ main ============================ */
 
 int main(void)
@@ -366,7 +371,7 @@ int main(void)
     LOG_INF("Bringing network interface up and connecting");
     printk("=== Before conn_mgr_all_if_up ===\n");
 
-    /* 2. 让 conn_mgr 初始化 modem 并 bring up 接口 */
+    
     err = conn_mgr_all_if_up(true);
     printk("=== conn_mgr_all_if_up() returned: %d ===\n", err);
     if (err) {
