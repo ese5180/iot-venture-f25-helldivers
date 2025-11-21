@@ -44,7 +44,7 @@ LOG_MODULE_REGISTER(gnss_task, LOG_LEVEL_INF);
 #define PHILLY_TIME_OFFSET_HOURS     (-5)
 
 /* GNSS 任务线程配置 */
-#define GNSS_TASK_STACK_SIZE         2048
+#define GNSS_TASK_STACK_SIZE         4096
 #define GNSS_TASK_PRIORITY           5
 
 /* ====================== GPIO / 硬件定义 ====================== */

@@ -14,8 +14,13 @@ target_sources(app PRIVATE src/main.c)
 target_sources(app PRIVATE src/json_payload/json_payload.c)
 target_sources(app PRIVATE src/horse_payload/horse_payload.c)
 target_sources(app PRIVATE src/cert_provision.c)
+zephyr_library_sources(src/gnss/gnss_task.c)
 # NORDIC SDK APP END
 
 zephyr_include_directories(src)
 zephyr_include_directories(src/json_payload)
 zephyr_include_directories(src/horse_payload)
+zephyr_include_directories(src/gnss)
+
+zephyr_library_sources_ifdef(CONFIG_GNSS_SAMPLE_ASSISTANCE_MINIMAL src/gnss/assistance_minimal.c)
+zephyr_library_sources_ifdef(CONFIG_GNSS_SAMPLE_ASSISTANCE_MINIMAL src/gnss/mcc_location_table.c)
