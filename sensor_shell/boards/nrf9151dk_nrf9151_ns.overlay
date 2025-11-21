@@ -1,0 +1,18 @@
+&i2c2 {
+    status = "okay";
+
+    bno055: bno055@28 {
+        compatible = "bosch,bno055";
+        reg = <0x28>;
+        label = "BNO055";
+        status = "okay";
+    };
+
+    bme280: bme280@77 {
+        compatible = "bosch,bme280";
+        reg = <0x77>;
+        label = "BME280";
+        status = "okay";
+    };
+};
+
