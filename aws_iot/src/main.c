@@ -334,6 +334,7 @@ static void l4_event_handler(struct net_mgmt_event_callback *cb,
         printk("=== L4_CONNECTED: scheduling connect_work ===\n");
         //add
         gnss_start_after_lte_ready();
+        printk("gnss_start_after_lte_ready success\n");
         //
         (void)k_work_schedule(&connect_work, K_NO_WAIT);
         break;
