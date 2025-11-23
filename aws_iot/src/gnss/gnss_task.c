@@ -44,7 +44,7 @@ LOG_MODULE_REGISTER(gnss_task, LOG_LEVEL_INF);
 #define PHILLY_TIME_OFFSET_HOURS     (-5)
 
 /* GNSS 任务线程配置 */
-#define GNSS_TASK_STACK_SIZE         2048
+#define GNSS_TASK_STACK_SIZE         4096
 #define GNSS_TASK_PRIORITY           5
 
 /* ====================== GPIO / 硬件定义 ====================== */
@@ -75,6 +75,27 @@ static const struct gpio_dt_spec led_blue  = GPIO_DT_SPEC_GET(LED_BLUE_NODE, gpi
 
 static const struct gpio_dt_spec button1   = GPIO_DT_SPEC_GET(BUTTON1_NODE, gpios);
 static struct gpio_callback button1_cb;
+//add
+void gnss_start_after_lte_ready(void)
+{
+    int err;
+
+    /* 激活 GNSS 功能模式 */
+    err = lte_lc_func_mode_set(LTE_LC_FUNC_MODE_ACTIVATE_GNSS);
+    if (err) {
+        printk("Failed to activate GNSS functional mode: %d\n", err);
+        return;
+    }
+
+    /* 启动 GNSS 接收 (PVT) */
+    err = nrf_modem_gnss_start();
+    if (err) {
+        printk("Failed to start GNSS: %d\n", err);
+        return;
+    }
+
+    printk("=== GNSS started after LTE ready ===\n");
+}
 
 /* ====================== GNSS & 状态机定义 ====================== */
 
