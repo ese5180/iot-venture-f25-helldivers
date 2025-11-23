@@ -16,6 +16,47 @@
 #include <modem/nrf_modem_lib.h>
 #include "gnss_task.h"
 #include <modem/lte_lc.h>
+//////////////////////////fota////////////////////////////////
+#include <net/aws_fota.h>
+#include <net/aws_iot.h>
+#include <zephyr/logging/log.h>
+LOG_MODULE_REGISTER(aws_iot_sample, CONFIG_AWS_IOT_SAMPLE_LOG_LEVEL);
+static void aws_fota_evt_handler(struct aws_fota_event *evt)
+{
+    switch (evt->id) {
+
+    case AWS_FOTA_EVT_START:
+        LOG_INF("AWS FOTA: Update started");
+        break;
+
+    case AWS_FOTA_EVT_DL_PROGRESS:
+        LOG_INF("AWS FOTA: Download %d%%", evt->dl.progress);
+        break;
+
+    case AWS_FOTA_EVT_ERASE_PENDING:
+        LOG_INF("AWS FOTA: Flash erase pending...");
+        break;
+
+    case AWS_FOTA_EVT_ERASE_DONE:
+        LOG_INF("AWS FOTA: Flash erase complete, rebooting...");
+        sys_reboot(SYS_REBOOT_COLD);
+        break;
+
+    case AWS_FOTA_EVT_DONE:
+        LOG_INF("AWS FOTA: Update done (image=%d)", evt->image);
+        break;
+
+    case AWS_FOTA_EVT_ERROR:
+        LOG_ERR("AWS FOTA: Error occurred");
+        break;
+
+    default:
+        LOG_WRN("AWS FOTA: Unknown event %d", evt->id);
+        break;
+    }
+}
+
+
 
 /*===============================parameter==========================*/
 
@@ -83,9 +124,6 @@ static void horse_data_work_fn(struct k_work *work)
     k_work_reschedule(&horse_data_work, K_SECONDS(10));
 }
 
-
-
-LOG_MODULE_REGISTER(aws_iot_sample, CONFIG_AWS_IOT_SAMPLE_LOG_LEVEL);
 
 #define L4_EVENT_MASK         (NET_EVENT_L4_CONNECTED | NET_EVENT_L4_DISCONNECTED)
 #define CONN_LAYER_EVENT_MASK (NET_EVENT_CONN_IF_FATAL_ERROR)
@@ -273,8 +311,8 @@ static void on_aws_iot_evt_connected(const struct aws_iot_evt *const evt)
 #if defined(CONFIG_BOOTLOADER_MCUBOOT)
     boot_write_img_confirmed();
 #endif
+    /* ===== FOTA ADD: AWS IoT connect FOTA ===== */
     
-
     (void)k_work_reschedule(&shadow_update_work, K_NO_WAIT);
 
     k_work_reschedule(&horse_data_work, K_SECONDS(10));
@@ -302,6 +340,9 @@ static void aws_iot_event_handler(const struct aws_iot_evt *const evt)
         break;
     case AWS_IOT_EVT_DATA_RECEIVED:
         LOG_INF("AWS_IOT_EVT_DATA_RECEIVED");
+        // if (aws_fota_mqtt_evt_handler(mqtt_client, evt->data.msg.mqtt_evt) == 0) {
+        //     return;
+        // }
         LOG_INF("Received: \"%.*s\" on \"%.*s\"",
             evt->data.msg.len, evt->data.msg.ptr,
             evt->data.msg.topic.len, evt->data.msg.topic.str);
@@ -458,7 +499,7 @@ int main(void)
     int err;
 
     LOG_INF("Main(LTE) app starting...");
-    
+
     /* --------------------------------------------------
      * Step 1: 初始化 Modem （但不启动 LTE）
      * -------------------------------------------------- */
@@ -480,18 +521,15 @@ int main(void)
     }
 
     /* --------------------------------------------------
-     * Step 3: 初始化 GNSS Task （不激活 GNSS）
-     *      只创建线程，但不 call lte_lc_func_mode_set()
-     *      GNSS 的激活必须等 LTE 连接之后才可以
+     * Step 3: 初始化 GNSS Task（不启动）
      * -------------------------------------------------- */
-    err = gnss_system_init();   
+    err = gnss_system_init();
     if (err) {
         LOG_ERR("gnss_system_init failed: %d", err);
-        /* 不 FATAL_ERROR，因为 GNSS 可以延后激活 */
     }
 
     /* --------------------------------------------------
-     * Step 4: 注册 LTE 链路事件 (AWS 会在 L4_CONNECTED 启动 GNSS)
+     * Step 4: 注册 LTE 链路事件回调
      * -------------------------------------------------- */
     net_mgmt_init_event_callback(&l4_cb, l4_event_handler, L4_EVENT_MASK);
     net_mgmt_add_event_callback(&l4_cb);
@@ -505,7 +543,7 @@ int main(void)
     printk("=== Before conn_mgr_all_if_up ===\n");
 
     /* --------------------------------------------------
-     * Step 5: 启动 LTE (模块上线)
+     * Step 5: 启动 LTE (Modem 上线)
      * -------------------------------------------------- */
     err = conn_mgr_all_if_up(true);
     printk("=== conn_mgr_all_if_up() returned: %d ===\n", err);
@@ -518,9 +556,8 @@ int main(void)
     printk("=== Before conn_mgr_all_if_connect ===\n");
 
     /* --------------------------------------------------
-     * Step 6: 连接网络（RRC 注册）
-     * 连接成功后会进入 L4_CONNECTED 
-     * 在 L4_CONNECTED 的 handler 中启动 AWS + GNSS activation
+     * Step 6: 连接移动网络
+     *      成功后进入 L4_CONNECTED 事件处理
      * -------------------------------------------------- */
     err = conn_mgr_all_if_connect(true);
     printk("=== conn_mgr_all_if_connect() returned: %d ===\n", err);
@@ -550,8 +587,7 @@ int main(void)
     printk("=== Before aws_iot_client_init ===\n");
 
     /* --------------------------------------------------
-     * Step 8: AWS IoT 初始化（但不连接）
-     * AWS 连接会在 l4_event_handler: L4_CONNECTED 中触发
+     * Step 8: 初始化 AWS IoT（不连接）
      * -------------------------------------------------- */
     err = aws_iot_client_init();
     printk("=== aws_iot_client_init() returned: %d ===\n", err);
@@ -560,6 +596,18 @@ int main(void)
         FATAL_ERROR();
         return err;
     }
+
+    /* --------------------------------------------------
+     * Step 9: 初始化 AWS FOTA （新增）
+     * -------------------------------------------------- */
+    // ===== FOTA ADD =====
+    // err = aws_fota_init(aws_fota_evt_handler);
+    // if (err) {
+    //     LOG_ERR("aws_fota_init failed: %d", err);
+    // } else {
+    //     LOG_INF("AWS FOTA initialized");
+    // }
+    // // ===== END FOTA ADD =====
 
     printk("=== main() finished, waiting for events ===\n");
 

@@ -1,0 +1,10 @@
+{
+  "operation": "app_fw_update",
+  "fwversion": "v1.0.2",
+  "size": 181124,
+  "location": {
+    "protocol": "https",
+    "host": "ese518-demo-bucket.s3.us-east-1.amazonaws.com",
+    "path": "zephyr.signed.bin"
+   }
+}
