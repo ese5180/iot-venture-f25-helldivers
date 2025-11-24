@@ -3,6 +3,7 @@
         "lte_lc.h": "c",
         "stdint.h": "c",
         "nrf_modem_lib.h": "c",
-        "json_payload.h": "c"
+        "json_payload.h": "c",
+        "kernel.h": "c"
     }
 }

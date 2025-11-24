@@ -48,7 +48,7 @@ LOG_MODULE_REGISTER(gnss_task, LOG_LEVEL_INF);
 #define GNSS_TASK_PRIORITY           5
 
 /* ====================== GPIO / 硬件定义 ====================== */
-/* 这里假设使用 nRF91 DK 的 LED0/LED1/LED2 作为 RGB，SW0 作为 Button1 */
+/* 这里假设使用 nRF91 DK 的 LED0/LED1 作为指示灯，SW0 作为 Button1 */
 
 /* LED */
 #define LED_RED_NODE   DT_ALIAS(led0)
@@ -75,15 +75,30 @@ static const struct gpio_dt_spec led_blue  = GPIO_DT_SPEC_GET(LED_BLUE_NODE, gpi
 
 static const struct gpio_dt_spec button1   = GPIO_DT_SPEC_GET(BUTTON1_NODE, gpios);
 static struct gpio_callback button1_cb;
-//add
+
+/* ====================== 在 LTE ready 之后启动 GNSS ====================== */
+
 void gnss_start_after_lte_ready(void)
 {
     int err;
 
-    /* 激活 GNSS 功能模式 */
+    /* 激活 GNSS 功能模式（在已有 LTE 的基础上打开 GNSS） */
     err = lte_lc_func_mode_set(LTE_LC_FUNC_MODE_ACTIVATE_GNSS);
     if (err) {
         printk("Failed to activate GNSS functional mode: %d\n", err);
+        return;
+    }
+
+    /* 现在 GNSS 功能模式已打开，再配置 fix_retry / fix_interval */
+    err = nrf_modem_gnss_fix_retry_set(0);
+    if (err) {
+        printk("Failed to set fix retry: %d\n", err);
+        return;
+    }
+
+    err = nrf_modem_gnss_fix_interval_set(1);
+    if (err) {
+        printk("Failed to set fix interval: %d\n", err);
         return;
     }
 
@@ -399,8 +414,16 @@ static void send_gnss_message(bool is_water_gnss)
     msg.is_water_gnss = is_water_gnss;
     msg.status        = current_status;
 
-    /* 如果队列满了，不阻塞系统：丢弃这条最新的（根据你需求也可以 K_FOREVER） */
-    (void)k_msgq_put(&gnss_msgq, &msg, K_NO_WAIT);
+    /* 关键修改：
+     * 队列如果满了，先清空旧数据，再放入当前这条最新状态，
+     * 确保 GNSS 一旦拿到 valid fix，最新的经纬度不会被旧的 0,0 挡在外面。
+     */
+    int err = k_msgq_put(&gnss_msgq, &msg, K_NO_WAIT);
+    if (err != 0) {
+        /* 队列满：清空所有旧消息，只保留最新这一条 */
+        k_msgq_purge(&gnss_msgq);
+        (void)k_msgq_put(&gnss_msgq, &msg, K_NO_WAIT);
+    }
 }
 
 /* ====================== PVT 处理（由 GNSS 线程调用） ====================== */
@@ -520,42 +543,23 @@ static void gnss_event_handler(int event)
 
 /* ====================== GNSS 初始化 ====================== */
 
+/*
+ * 注意：现在 gnss_init_and_start 只做 “注册 handler”，不真正 start GNSS，
+ * 也不在这里设置 fix_retry/fix_interval。
+ * 真正的配置 + start 由 gnss_start_after_lte_ready() 在 LTE L4_CONNECTED 之后调用。
+ */
 static int gnss_init_and_start(void)
 {
     int err;
 
-    /* GNSS 功能模式（仅 GNSS，不开 LTE） */
-    err = lte_lc_func_mode_set(LTE_LC_FUNC_MODE_ACTIVATE_GNSS);
-    if (err) {
-        LOG_ERR("Failed to activate GNSS functional mode, err %d", err);
-        return err;
-    }
-
+    /* 设置 GNSS 事件回调 */
     err = nrf_modem_gnss_event_handler_set(gnss_event_handler);
     if (err) {
         LOG_ERR("Failed to set GNSS event handler, err %d", err);
         return err;
     }
 
-    /* 连续跟踪，1 秒一帧 */
-    err = nrf_modem_gnss_fix_retry_set(0);
-    if (err) {
-        LOG_ERR("Failed to set fix retry, err %d", err);
-        return err;
-    }
-
-    err = nrf_modem_gnss_fix_interval_set(1);
-    if (err) {
-        LOG_ERR("Failed to set fix interval, err %d", err);
-        return err;
-    }
-
-    err = nrf_modem_gnss_start();
-    if (err) {
-        LOG_ERR("Failed to start GNSS, err %d", err);
-        return err;
-    }
-
+    LOG_INF("GNSS init done (event handler set). Waiting for LTE to start GNSS.");
     return 0;
 }
 
@@ -589,7 +593,7 @@ static int hardware_init(void)
     }
 #endif
 
-    /* 开机默认红灯（还在搜星） */
+    /* 开机默认红灯（还在搜星 / 系统初始化阶段） */
     gps_led_set(GPS_LED_RED);
 
     /* Button1 */
@@ -650,12 +654,13 @@ int gnss_system_init(void)
         return err;
     }
 
+    /* 这里只做 GNSS 配置（注册 handler），不真正 start，也不改 retry/interval。 */
     err = gnss_init_and_start();
     if (err) {
         LOG_ERR("gnss_init_and_start failed, err %d", err);
         return err;
     }
 
-    LOG_INF("GNSS system initialized");
+    LOG_INF("GNSS system initialized (handler set, waiting for LTE to start GNSS)");
     return 0;
 }
