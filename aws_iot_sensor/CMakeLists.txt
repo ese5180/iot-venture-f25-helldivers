@@ -15,6 +15,7 @@ target_sources(app PRIVATE src/sensor/sensor.c)
 target_sources(app PRIVATE src/json_payload/json_payload.c)
 target_sources(app PRIVATE src/horse_payload/horse_payload.c)
 target_sources(app PRIVATE src/cert_provision.c)
+target_sources(app PRIVATE src/sensor/horse_balance.c)
 
 # ================= GNSS =========================
 zephyr_library_sources(src/gnss/gnss_task.c)

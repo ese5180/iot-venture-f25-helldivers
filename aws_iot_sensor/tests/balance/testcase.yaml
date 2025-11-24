@@ -1,0 +1,6 @@
+tests:
+  horse.balance.unit:
+    platform_allow: qemu_cortex_m3
+    tags: horse balance
+    harness: ztest
+    timeout: 120

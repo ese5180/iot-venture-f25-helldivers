@@ -5,5 +5,8 @@
         "nrf_modem_lib.h": "c",
         "json_payload.h": "c",
         "kernel.h": "c"
-    }
+    },
+    "nrf-connect.applications": [
+        "${workspaceFolder}"
+    ]
 }

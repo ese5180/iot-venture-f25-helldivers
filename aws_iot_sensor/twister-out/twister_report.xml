@@ -1,0 +1,12 @@
+<testsuites>
+	<testsuite name="qemu_cortex_m3/ti_lm3s6965" timestamp="2025-11-24T15:35:57.065518" time="63.1" tests="5" failures="0" errors="0" skipped="0">
+		<properties>
+			<property name="version" value="v4.0.99-ncs1-2" />
+		</properties>
+		<testcase classname="horse.balance.unit" name="horse.balance.unit.horse_balance.back_to_balanced_resets_state" time="0.00" />
+		<testcase classname="horse.balance.unit" name="horse.balance.unit.horse_balance.fh_imbalance_when_pitch_exceeds_threshold" time="0.00" />
+		<testcase classname="horse.balance.unit" name="horse.balance.unit.horse_balance.lr_imbalance_when_roll_exceeds_threshold" time="0.00" />
+		<testcase classname="horse.balance.unit" name="horse.balance.unit.horse_balance.first_update_sets_baseline_only" time="0.00" />
+		<testcase classname="horse.balance.unit" name="horse.balance.unit.horse_balance.init_sets_fields" time="0.00" />
+	</testsuite>
+</testsuites>

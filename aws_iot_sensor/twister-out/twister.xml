@@ -1,0 +1,8 @@
+<testsuites>
+	<testsuite name="qemu_cortex_m3/ti_lm3s6965" timestamp="2025-11-24T15:35:57.065518" time="63.1" tests="1" failures="0" errors="0" skipped="0">
+		<properties>
+			<property name="version" value="v4.0.99-ncs1-2" />
+		</properties>
+		<testcase classname="qemu_cortex_m3/ti_lm3s6965:horse.balance.unit" name="horse.balance.unit" time="63.10" />
+	</testsuite>
+</testsuites>
