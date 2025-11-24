@@ -1,0 +1,44 @@
+name: Twister CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  twister-tests:
+    runs-on: ubuntu-latest
+
+    steps:
+      # 1. 拉取当前仓库代码
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # 2. 适当清理一下磁盘空间（GitHub runner 空间比较紧）
+      - name: Free disk space
+        run: |
+          sudo rm -rf /usr/local/lib/android || true
+          sudo rm -rf /opt/ghc || true
+          sudo rm -rf /usr/share/dotnet || true
+
+      # 3. 用 Zephyr 官方 Docker 镜像跑 Twister
+      - name: Run Twister tests in Docker
+        run: |
+          docker run --rm \
+            -v "${{ github.workspace }}:/workdir" \
+            -w /workdir/aws_iot_sensor \
+            ghcr.io/zephyrproject-rtos/zephyr-build:main \
+            bash -lc '
+              echo "ZEPHYR_BASE = $ZEPHYR_BASE"
+              echo "Running west twister on tests/balance..."
+              west twister -p qemu_cortex_m3 -T tests/balance --inline-logs -v
+            '
+
+      # 4. 上传 Twister 生成的报告 / build 结果
+      - name: Upload Twister artifacts
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: twister-out
+          path: aws_iot_sensor/twister-out/
