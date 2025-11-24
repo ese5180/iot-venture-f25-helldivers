@@ -1,0 +1,37 @@
+#
+# Copyright (c) 2019 Nordic Semiconductor
+#
+# SPDX-License-Identifier: LicenseRef-Nordic-5-Clause
+#
+
+cmake_minimum_required(VERSION 3.20.0)
+
+find_package(Zephyr REQUIRED HINTS $ENV{ZEPHYR_BASE})
+project(GNSS_RTOS)
+
+# ======================================
+# ADD APPLICATION SOURCES
+# ======================================
+target_sources(app PRIVATE
+    src/main.c
+    src/gnss_task.c
+
+    # sensor module
+    src/sensor/sensor_task.c
+    src/sensor/horse_balance.c
+    src/sensor/fake_sensor.c
+)
+
+# ======================================
+# ADD INCLUDE PATHS !!!!! VERY IMPORTANT
+# ======================================
+target_include_directories(app PRIVATE
+    src
+    src/sensor
+)
+
+# ======================================
+# GNSS Assistance
+# ======================================
+zephyr_library_sources_ifdef(CONFIG_GNSS_SAMPLE_ASSISTANCE_MINIMAL src/assistance_minimal.c)
+zephyr_library_sources_ifdef(CONFIG_GNSS_SAMPLE_ASSISTANCE_MINIMAL src/mcc_location_table.c)
