@@ -1,4 +1,4 @@
-name: twister-tests
+name: Twister CI
 
 on:
   push:
@@ -7,54 +7,54 @@ on:
     branches: [ main ]
 
 jobs:
-  twister:
+  twister-tests:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout repository
+      # 1. 把你的项目 checkout 到子目录 project/
+      - name: Checkout repo
         uses: actions/checkout@v4
+        with:
+          path: project
 
-      - name: Free disk space
+      # 2. 安装编译 Zephyr + native_sim 所需的一些包
+      - name: Install build dependencies
         run: |
-          sudo rm -rf /usr/share/dotnet
-          sudo rm -rf /opt/ghc
-          sudo rm -rf "/usr/local/share/boost"
-          df -h
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            git cmake ninja-build gperf \
+            python3-dev python3-pip python3-setuptools python3-wheel \
+            xz-utils file make gcc g++ \
+            libsdl2-dev
 
-      - name: Run Twister tests in Docker
+      # 3. 初始化一个 Zephyr workspace（只为了跑 Twister）
+      - name: Init Zephyr workspace
         run: |
-          docker run --rm \
-            -v "${{ github.workspace }}:/workdir" \
-            -w /workdir \
-            ghcr.io/zephyrproject-rtos/zephyr-build:main \
-            bash -lc '
-              set -eux
+          pip3 install --user west
+          echo "$HOME/.local/bin" >> $GITHUB_PATH
 
-              # 一定要在 /workdir 里操作，这个目录就是你的 repo，具备写权限
-              cd /workdir
-              echo "PWD is $(pwd)"
-              ls
+          # 在仓库根目录下创建 zephyrproject/
+          west init -m https://github.com/zephyrproject-rtos/zephyr --mr v4.0.0 zephyrproject
+          cd zephyrproject
+          west update --narrow
+          pip3 install -r zephyr/scripts/requirements.txt
 
-              echo "=== Clone Zephyr repo for Twister ==="
-              git clone --depth 1 https://github.com/zephyrproject-rtos/zephyr.git zephyr
+      # 4. 跑 Twister，指向你 aws_iot_sensor 里的 balance unit test
+      - name: Run Twister horse balance tests
+        working-directory: zephyrproject
+        env:
+          ZEPHYR_BASE: ${{ github.workspace }}/zephyrproject/zephyr
+        run: |
+          python3 zephyr/scripts/twister \
+            -p native_sim/native/64 \
+            -T $GITHUB_WORKSPACE/project/aws_iot_sensor/tests/balance \
+            --outdir $GITHUB_WORKSPACE/twister-out-ci \
+            --inline-logs
 
-              export ZEPHYR_BASE=/workdir/zephyr
-
-              # 确保 Twister 依赖就绪（一般镜像里都有，这里保险起见）
-              pip3 install -r zephyr/scripts/requirements-base.txt
-
-              mkdir -p aws_iot_sensor/twister-out
-
-              west twister \
-                -p qemu_cortex_m3 \
-                -T aws_iot_sensor/tests/balance \
-                --inline-logs \
-                --report-junit aws_iot_sensor/twister-out/twister.xml \
-                --report-json  aws_iot_sensor/twister-out/twister.json
-            '
-
+      # 5. 把 Twister 输出作为 artifact 上传，方便助教下载看
       - name: Upload Twister artifacts
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: twister-out
-          path: aws_iot_sensor/twister-out
+          path: twister-out-ci
