@@ -1,0 +1,13 @@
+# Target labels
+ sensor_shell
+# Source files and their labels
+C:/ncs/v3.0.2/zephyr/samples/sensor/sensor_shell/build/_sysbuild/sysbuild/images/CMakeFiles/sensor_shell
+C:/ncs/v3.0.2/zephyr/samples/sensor/sensor_shell/build/_sysbuild/sysbuild/images/CMakeFiles/sensor_shell.rule
+C:/ncs/v3.0.2/zephyr/samples/sensor/sensor_shell/build/_sysbuild/sysbuild/images/CMakeFiles/sensor_shell-complete.rule
+C:/ncs/v3.0.2/zephyr/samples/sensor/sensor_shell/build/_sysbuild/sysbuild/images/sensor_shell-prefix/src/sensor_shell-stamp/sensor_shell-build.rule
+C:/ncs/v3.0.2/zephyr/samples/sensor/sensor_shell/build/_sysbuild/sysbuild/images/sensor_shell-prefix/src/sensor_shell-stamp/sensor_shell-configure.rule
+C:/ncs/v3.0.2/zephyr/samples/sensor/sensor_shell/build/_sysbuild/sysbuild/images/sensor_shell-prefix/src/sensor_shell-stamp/sensor_shell-download.rule
+C:/ncs/v3.0.2/zephyr/samples/sensor/sensor_shell/build/_sysbuild/sysbuild/images/sensor_shell-prefix/src/sensor_shell-stamp/sensor_shell-install.rule
+C:/ncs/v3.0.2/zephyr/samples/sensor/sensor_shell/build/_sysbuild/sysbuild/images/sensor_shell-prefix/src/sensor_shell-stamp/sensor_shell-mkdir.rule
+C:/ncs/v3.0.2/zephyr/samples/sensor/sensor_shell/build/_sysbuild/sysbuild/images/sensor_shell-prefix/src/sensor_shell-stamp/sensor_shell-patch.rule
+C:/ncs/v3.0.2/zephyr/samples/sensor/sensor_shell/build/_sysbuild/sysbuild/images/sensor_shell-prefix/src/sensor_shell-stamp/sensor_shell-update.rule

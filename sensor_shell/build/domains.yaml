@@ -1,0 +1,7 @@
+default: sensor_shell
+build_dir: C:/ncs/v3.0.2/zephyr/samples/sensor/sensor_shell/build
+domains:
+  - name: sensor_shell
+    build_dir: C:/ncs/v3.0.2/zephyr/samples/sensor/sensor_shell/build/sensor_shell
+flash_order:
+  - sensor_shell
