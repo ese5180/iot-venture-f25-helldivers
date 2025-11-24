@@ -1043,6 +1043,14 @@ arduino_spi: &spi3 {
 };
 # 0 "<command-line>" 2
 # 1 "C:/ncs/v3.0.2/zephyr/samples/sensor/sensor_shell/boards/nrf9151dk_nrf9151_ns.overlay" 1
+/ {
+    zephyr,user {
+
+        bno_pwr_gpios = <&gpio0 2 (1 << 0)>;
+    };
+};
+
+
 &i2c2 {
     status = "okay";
 
