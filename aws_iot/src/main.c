@@ -8,23 +8,27 @@
 #include <net/aws_iot.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
+
 #include <hw_id.h>
 #include <modem/modem_info.h>
+#include <modem/nrf_modem_lib.h>
+#include <modem/lte_lc.h>
 
 #include "json_payload.h"
 #include "horse_payload.h"
-#include <modem/nrf_modem_lib.h>
 #include "gnss_task.h"
-#include <modem/lte_lc.h>
-//////////////////////////fota////////////////////////////////
+
+////////////////////////// FOTA //////////////////////////////////
 #include <net/aws_fota.h>
-#include <net/aws_iot.h>
-#include <zephyr/logging/log.h>
+
 LOG_MODULE_REGISTER(aws_iot_sample, CONFIG_AWS_IOT_SAMPLE_LOG_LEVEL);
+
+/*=============================== FOTA handler ===========================*/
+
 static void aws_fota_evt_handler(struct aws_fota_event *evt)
 {
     switch (evt->id) {
-
     case AWS_FOTA_EVT_START:
         LOG_INF("AWS FOTA: Update started");
         break;
@@ -56,15 +60,16 @@ static void aws_fota_evt_handler(struct aws_fota_event *evt)
     }
 }
 
+/*=============================== parameter ==========================*/
 
+/* 统一 horse_data 上报间隔（秒） */
+#define HORSE_DATA_INTERVAL_SEC 120
 
-/*===============================parameter==========================*/
-
-/*===============================change code==========================*/
+/*=============================== horse_data work ==========================*/
 static void horse_data_work_fn(struct k_work *work);
 K_WORK_DELAYABLE_DEFINE(horse_data_work, horse_data_work_fn);
 
-/*==========================================hores_data=======================================*/
+/*========================================== horse_data =======================================*/
 void publish_horse_data(float temperature, float moisture, float pitch,
                         float gps_lat, float gps_lon,
                         int water_flag, int water_time)
@@ -96,34 +101,51 @@ void publish_horse_data(float temperature, float moisture, float pitch,
     tx.topic.len = strlen(tx.topic.str);
 
     int err = aws_iot_send(&tx);
+    if (err) {
+        LOG_ERR("aws_iot_send (horse_data) failed: %d", err);
+    }
+
     printk("horse_data sent: %s\n", json_buf);
 }
 
-/* ================= hores_data update work ================= */
+/* ================= horse_data update work ================= */
 static void horse_data_work_fn(struct k_work *work)
 {
+    ARG_UNUSED(work);
+
     struct gnss_status_msg msg;
-    while (k_msgq_get(&gnss_msgq, &msg, K_NO_WAIT) == 0) {
-        /* 循环到最后一条 msg */
-    }
     static struct gnss_status_msg last_msg = {0};
-    if (msg.lat != 0) {
-        last_msg = msg;
+
+    /* 把队列里累积的数据读到最后一条 */
+    int got_msg = 0;
+    while (k_msgq_get(&gnss_msgq, &msg, K_NO_WAIT) == 0) {
+        got_msg = 1;
     }
+
+    /* 只有在真的从 GNSS 收到消息时才更新 last_msg；
+     * 并且只在 lat/lon 非 0 时覆盖，避免把 0 覆盖掉已有的有效坐标。
+     */
+    if (got_msg) {
+        if (msg.lat != 0.0f || msg.lon != 0.0f) {
+            last_msg = msg;
+        }
+    }
+
     publish_horse_data(
-        23.5f,
-        56.7f,
-        12.8f,
+        23.5f,                          /* TODO: 替换成真实温度 */
+        56.7f,                          /* TODO: 替换成真实湿度 */
+        12.8f,                          /* TODO: 替换成真实 pitch */
         last_msg.lat,
         last_msg.lon,
         last_msg.is_water_gnss ? 1 : 0,
         (int)last_msg.total_water_s
     );
 
-    /* 10 秒后再次执行 */
-    k_work_reschedule(&horse_data_work, K_SECONDS(10));
+    /* 下次上报 */
+    k_work_reschedule(&horse_data_work, K_SECONDS(HORSE_DATA_INTERVAL_SEC));
 }
 
+/*========================= NET / AWS 相关 =========================*/
 
 #define L4_EVENT_MASK         (NET_EVENT_L4_CONNECTED | NET_EVENT_L4_DISCONNECTED)
 #define CONN_LAYER_EVENT_MASK (NET_EVENT_CONN_IF_FATAL_ERROR)
@@ -147,8 +169,13 @@ static void shadow_update_work_fn(struct k_work *work);
 static void connect_work_fn(struct k_work *work);
 static void aws_iot_event_handler(const struct aws_iot_evt *const evt);
 
+/* AWS shadow 定时上报 & 连接重试 */
 static K_WORK_DELAYABLE_DEFINE(shadow_update_work, shadow_update_work_fn);
 static K_WORK_DELAYABLE_DEFINE(connect_work, connect_work_fn);
+
+/* GNSS 启动的 work，避免在 net_mgmt 线程里直接调 */
+static void gnss_start_work_fn(struct k_work *work);
+static K_WORK_DEFINE(gnss_start_work, gnss_start_work_fn);
 
 /* ================= Application topics ================= */
 
@@ -216,6 +243,8 @@ static int aws_iot_client_init(void)
 
 static void shadow_update_work_fn(struct k_work *work)
 {
+    ARG_UNUSED(work);
+
     int err;
     char message[CONFIG_AWS_IOT_SAMPLE_JSON_MESSAGE_SIZE_MAX] = { 0 };
     struct payload payload = {
@@ -231,7 +260,7 @@ static void shadow_update_work_fn(struct k_work *work)
         char modem_version_temp[MODEM_FIRMWARE_VERSION_SIZE_MAX];
 
         err = modem_info_get_fw_version(modem_version_temp,
-                        ARRAY_SIZE(modem_version_temp));
+                                        ARRAY_SIZE(modem_version_temp));
         if (err) {
             LOG_ERR("modem_info_get_fw_version, error: %d", err);
             FATAL_ERROR();
@@ -268,6 +297,8 @@ static void shadow_update_work_fn(struct k_work *work)
 
 static void connect_work_fn(struct k_work *work)
 {
+    ARG_UNUSED(work);
+
     int err;
     const struct aws_iot_config config = {
         .client_id = hw_id,
@@ -311,11 +342,10 @@ static void on_aws_iot_evt_connected(const struct aws_iot_evt *const evt)
 #if defined(CONFIG_BOOTLOADER_MCUBOOT)
     boot_write_img_confirmed();
 #endif
-    /* ===== FOTA ADD: AWS IoT connect FOTA ===== */
-    
-    (void)k_work_reschedule(&shadow_update_work, K_NO_WAIT);
 
-    k_work_reschedule(&horse_data_work, K_SECONDS(10));
+    /* 启动 shadow 上报 & horse_data 定时上报 */
+    (void)k_work_reschedule(&shadow_update_work, K_NO_WAIT);
+    (void)k_work_reschedule(&horse_data_work, K_SECONDS(HORSE_DATA_INTERVAL_SEC));
 }
 
 static void on_aws_iot_evt_disconnected(void)
@@ -340,9 +370,6 @@ static void aws_iot_event_handler(const struct aws_iot_evt *const evt)
         break;
     case AWS_IOT_EVT_DATA_RECEIVED:
         LOG_INF("AWS_IOT_EVT_DATA_RECEIVED");
-        // if (aws_fota_mqtt_evt_handler(mqtt_client, evt->data.msg.mqtt_evt) == 0) {
-        //     return;
-        // }
         LOG_INF("Received: \"%.*s\" on \"%.*s\"",
             evt->data.msg.len, evt->data.msg.ptr,
             evt->data.msg.topic.len, evt->data.msg.topic.str);
@@ -363,20 +390,33 @@ static void aws_iot_event_handler(const struct aws_iot_evt *const evt)
     }
 }
 
+/* ================= GNSS start work ================= */
+
+static void gnss_start_work_fn(struct k_work *work)
+{
+    ARG_UNUSED(work);
+
+    /* 现在 gnss_start_after_lte_ready() 是 void，内部自己打印错误或成功日志 */
+    gnss_start_after_lte_ready();
+}
+
 /* ================= Network event handlers ================= */
 
 static void l4_event_handler(struct net_mgmt_event_callback *cb,
                  uint32_t event,
                  struct net_if *iface)
 {
+    ARG_UNUSED(cb);
+    ARG_UNUSED(iface);
+
     switch (event) {
     case NET_EVENT_L4_CONNECTED:
         LOG_INF("Network connectivity established");
         printk("=== L4_CONNECTED: scheduling connect_work ===\n");
-        //add
-        gnss_start_after_lte_ready();
-        printk("gnss_start_after_lte_ready success\n");
-        //
+
+        /* 不在 net_mgmt 线程里直接起 GNSS，改为提交 work，防止栈溢出 */
+        k_work_submit(&gnss_start_work);
+
         (void)k_work_schedule(&connect_work, K_NO_WAIT);
         break;
     case NET_EVENT_L4_DISCONNECTED:
@@ -391,127 +431,31 @@ static void connectivity_event_handler(struct net_mgmt_event_callback *cb,
                        uint32_t event,
                        struct net_if *iface)
 {
+    ARG_UNUSED(cb);
+    ARG_UNUSED(iface);
+
     if (event == NET_EVENT_CONN_IF_FATAL_ERROR) {
         LOG_ERR("NET_EVENT_CONN_IF_FATAL_ERROR");
         FATAL_ERROR();
     }
 }
 
-
-
-
 /* ============================ main ============================ */
 
-// int main(void)
-// {   
-//     int err;
-//     LOG_INF("Main(LTE) app starting...");
-//     err = nrf_modem_lib_init();
-//     if (err) {
-//         LOG_ERR("nrf_modem_lib_init failed, err %d", err);
-//         return err;
-//     }
-//     err = gnss_system_init();
-//     if (err) {
-//         LOG_ERR("gnss_system_init failed: %d", err);
-//     }
-
-//     extern int provision_credentials(void);
-
-//     LOG_INF("The AWS IoT sample started, version: %s",
-//         CONFIG_AWS_IOT_SAMPLE_APP_VERSION);
-
-//     printk("=== HELLDIVERS AWS MAIN, built at " __DATE__ " " __TIME__ " ===\n");
-
-    
-//     net_mgmt_init_event_callback(&l4_cb, l4_event_handler, L4_EVENT_MASK);
-//     net_mgmt_add_event_callback(&l4_cb);
-
-//     net_mgmt_init_event_callback(&conn_cb, connectivity_event_handler,
-//                      CONN_LAYER_EVENT_MASK);
-//     net_mgmt_add_event_callback(&conn_cb);
-
-//     LOG_INF("Bringing network interface up and connecting");
-//     printk("=== Before conn_mgr_all_if_up ===\n");
-
-    
-//     err = conn_mgr_all_if_up(true);
-//     printk("=== conn_mgr_all_if_up() returned: %d ===\n", err);
-//     if (err) {
-//         LOG_ERR("conn_mgr_all_if_up error: %d", err);
-//         FATAL_ERROR();
-//         return err;
-//     }
-
-    
-//     err = provision_credentials();
-//     if (err) {
-//         LOG_ERR("provision_credentials failed: %d", err);
-//         FATAL_ERROR();
-//         return err;
-//     }
-
-//     printk("=== Before conn_mgr_all_if_connect ===\n");
-//     err = conn_mgr_all_if_connect(true);
-//     printk("=== conn_mgr_all_if_connect() returned: %d ===\n", err);
-//     if (err) {
-//         LOG_ERR("conn_mgr_all_if_connect error: %d", err);
-//         FATAL_ERROR();
-//         return err;
-//     }
-
-// #if defined(CONFIG_AWS_IOT_SAMPLE_CLIENT_ID_USE_HW_ID)
-//     printk("=== Before hw_id_get ===\n");
-//     err = hw_id_get(hw_id, ARRAY_SIZE(hw_id));
-//     printk("=== hw_id_get() returned: %d ===\n", err);
-//     if (err) {
-//         LOG_ERR("Failed to retrieve hardware ID, error: %d", err);
-//         FATAL_ERROR();
-//         return err;
-//     }
-//     LOG_INF("Hardware ID: %s", hw_id);
-//     printk("=== Hardware ID: %s ===\n", hw_id);
-// #else
-//     snprintf(hw_id, sizeof(hw_id), "%s", CONFIG_AWS_IOT_CLIENT_ID_STATIC);
-//     LOG_INF("Using static client ID as hw_id: %s", hw_id);
-//     printk("=== Using static client ID as hw_id: %s ===\n", hw_id);
-// #endif
-
-//     printk("=== Before aws_iot_client_init ===\n");
-//     err = aws_iot_client_init();
-//     printk("=== aws_iot_client_init() returned: %d ===\n", err);
-//     if (err) {
-//         LOG_ERR("aws_iot_client_init error: %d", err);
-//         FATAL_ERROR();
-//         return err;
-//     }
-
-//     if (IS_ENABLED(CONFIG_BOARD_NATIVE_SIM)) {
-//         conn_mgr_mon_resend_status();
-//     }
-
-//     printk("=== main() finished, waiting for events ===\n");
-
-//     return 0;
-// }
 int main(void)
-{   
+{
     int err;
 
     LOG_INF("Main(LTE) app starting...");
 
-    /* --------------------------------------------------
-     * Step 1: 初始化 Modem （但不启动 LTE）
-     * -------------------------------------------------- */
+    /* Step 1: 初始化 Modem（但不启动 LTE） */
     err = nrf_modem_lib_init();
     if (err) {
         LOG_ERR("nrf_modem_lib_init failed, err %d", err);
         return err;
     }
 
-    /* --------------------------------------------------
-     * Step 2: 写 AWS 证书 (必须在 LTE 连接前)
-     * -------------------------------------------------- */
+    /* Step 2: 写 AWS 证书 (必须在 LTE 连接前) */
     extern int provision_credentials(void);
     err = provision_credentials();
     if (err) {
@@ -520,17 +464,13 @@ int main(void)
         return err;
     }
 
-    /* --------------------------------------------------
-     * Step 3: 初始化 GNSS Task（不启动）
-     * -------------------------------------------------- */
+    /* Step 3: 初始化 GNSS Task（线程已在 K_THREAD_DEFINE 中启动） */
     err = gnss_system_init();
     if (err) {
         LOG_ERR("gnss_system_init failed: %d", err);
     }
 
-    /* --------------------------------------------------
-     * Step 4: 注册 LTE 链路事件回调
-     * -------------------------------------------------- */
+    /* Step 4: 注册 LTE 链路事件回调 */
     net_mgmt_init_event_callback(&l4_cb, l4_event_handler, L4_EVENT_MASK);
     net_mgmt_add_event_callback(&l4_cb);
 
@@ -542,9 +482,7 @@ int main(void)
     LOG_INF("Bringing network interface up and connecting");
     printk("=== Before conn_mgr_all_if_up ===\n");
 
-    /* --------------------------------------------------
-     * Step 5: 启动 LTE (Modem 上线)
-     * -------------------------------------------------- */
+    /* Step 5: 启动 LTE (Modem 上线) */
     err = conn_mgr_all_if_up(true);
     printk("=== conn_mgr_all_if_up() returned: %d ===\n", err);
     if (err) {
@@ -555,10 +493,7 @@ int main(void)
 
     printk("=== Before conn_mgr_all_if_connect ===\n");
 
-    /* --------------------------------------------------
-     * Step 6: 连接移动网络
-     *      成功后进入 L4_CONNECTED 事件处理
-     * -------------------------------------------------- */
+    /* Step 6: 连接移动网络，成功后进入 L4_CONNECTED 事件处理 */
     err = conn_mgr_all_if_connect(true);
     printk("=== conn_mgr_all_if_connect() returned: %d ===\n", err);
     if (err) {
@@ -567,9 +502,7 @@ int main(void)
         return err;
     }
 
-    /* --------------------------------------------------
-     * Step 7: 设置 AWS Client ID
-     * -------------------------------------------------- */
+    /* Step 7: 设置 AWS Client ID */
 #if defined(CONFIG_AWS_IOT_SAMPLE_CLIENT_ID_USE_HW_ID)
     err = hw_id_get(hw_id, ARRAY_SIZE(hw_id));
     printk("=== hw_id_get() returned: %d ===\n", err);
@@ -579,16 +512,16 @@ int main(void)
         return err;
     }
     LOG_INF("Hardware ID: %s", hw_id);
+    printk("=== Hardware ID: %s ===\n", hw_id);
 #else
     snprintf(hw_id, sizeof(hw_id), "%s", CONFIG_AWS_IOT_CLIENT_ID_STATIC);
     LOG_INF("Using static client ID as hw_id: %s", hw_id);
+    printk("=== Using static client ID as hw_id: %s ===\n", hw_id);
 #endif
 
     printk("=== Before aws_iot_client_init ===\n");
 
-    /* --------------------------------------------------
-     * Step 8: 初始化 AWS IoT（不连接）
-     * -------------------------------------------------- */
+    /* Step 8: 初始化 AWS IoT（不连接） */
     err = aws_iot_client_init();
     printk("=== aws_iot_client_init() returned: %d ===\n", err);
     if (err) {
@@ -597,17 +530,15 @@ int main(void)
         return err;
     }
 
-    /* --------------------------------------------------
-     * Step 9: 初始化 AWS FOTA （新增）
-     * -------------------------------------------------- */
-    // ===== FOTA ADD =====
-    // err = aws_fota_init(aws_fota_evt_handler);
-    // if (err) {
-    //     LOG_ERR("aws_fota_init failed: %d", err);
-    // } else {
-    //     LOG_INF("AWS FOTA initialized");
-    // }
-    // // ===== END FOTA ADD =====
+    /* Step 9: 如需 FOTA 可在此初始化（当前注释掉以免干扰） */
+    /*
+    err = aws_fota_init(aws_fota_evt_handler);
+    if (err) {
+        LOG_ERR("aws_fota_init failed: %d", err);
+    } else {
+        LOG_INF("AWS FOTA initialized");
+    }
+    */
 
     printk("=== main() finished, waiting for events ===\n");
 
