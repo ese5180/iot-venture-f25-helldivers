@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Horse Realtime GPS Dashboard</title>
+
+<!-- Leaflet CSS -->
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+
+<style>
+    body {
+        font-family: Arial, sans-serif;
+        background: #f7f7f7;
+        padding: 20px;
+        text-align: center;
+        margin: 0;
+    }
+
+    h1, h2, h3 {
+        margin: 0.3rem 0;
+    }
+
+    #horse-box {
+        width: 220px;
+        margin: 0 auto 5px auto;
+        height: 220px;
+    }
+
+    #horse {
+        width: 220px;
+        height: 220px;
+        transform-origin: 110px 140px;
+        transition: transform 0.4s ease;
+    }
+
+    .eye {
+        transform-origin: center;
+        animation: blink 4s infinite;
+    }
+
+    @keyframes blink {
+        0%, 88%, 100% { transform: scaleY(1); }
+        90%           { transform: scaleY(0.15); }
+        92%           { transform: scaleY(1); }
+    }
+
+    @keyframes run-bounce {
+        0%   { transform: translateY(0px); }
+        50%  { transform: translateY(-10px); }
+        100% { transform: translateY(0px); }
+    }
+
+    @keyframes eye-jitter {
+        0%, 100% { transform: translateX(0px); }
+        50%      { transform: translateX(1.2px); }
+    }
+
+    .run {
+        animation: run-bounce 0.5s infinite ease-in-out;
+    }
+
+    .run .eye {
+        animation: blink 4s infinite, eye-jitter 0.25s infinite;
+    }
+
+    .tilt-left {
+        transform: rotate(-18deg);
+    }
+    .tilt-right {
+        transform: rotate(18deg);
+    }
+
+    /* 新增 -- 前倾与后倾 */
+    .tilt-front {
+        transform: translateY(-8px);
+    }
+    .tilt-hind {
+        transform: translateY(8px);
+    }
+
+    #maps-wrapper {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 16px;
+        margin-top: 16px;
+        justify-content: center;
+    }
+
+    .map-container {
+        flex: 1 1 420px;
+        min-width: 320px;
+        max-width: 700px;
+    }
+
+    .map-title {
+        font-weight: bold;
+        margin-bottom: 6px;
+    }
+
+    .map-box {
+        height: 360px;
+        width: 100%;
+        border-radius: 10px;
+        box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+    }
+
+    #data-box {
+        background: white;
+        padding: 15px;
+        border-radius: 10px;
+        width: 420px;
+        margin: 20px auto;
+        text-align: left;
+        box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+        font-size: 0.95rem;
+    }
+
+    #data-box b {
+        font-weight: 600;
+    }
+
+    @media (max-width: 600px) {
+        #data-box {
+            width: 90%;
+        }
+    }
+</style>
+</head>
+<body>
+
+<h2>🐴 Horse Realtime GPS Dashboard</h2>
+
+<div id="horse-box">
+    <svg id="horse" viewBox="0 0 200 200">
+        <ellipse cx="100" cy="155" rx="55" ry="24" fill="#8b4513"/>
+        <rect x="80" y="110" width="40" height="55" rx="8" fill="#5c3317"/>
+        <circle cx="100" cy="80" r="45" fill="#a0522d"/>
+        <g class="eye">
+            <circle cx="85" cy="70" r="8" fill="white"/>
+            <circle cx="86" cy="70" r="4" fill="black"/>
+        </g>
+        <g class="eye">
+            <circle cx="115" cy="70" r="8" fill="white"/>
+            <circle cx="116" cy="70" r="4" fill="black"/>
+        </g>
+        <path d="M80 50 Q65 20 95 30" stroke="#5c3317" stroke-width="8" fill="none" stroke-linecap="round"/>
+        <rect x="85" y="135" width="10" height="35" fill="#3f2613"/>
+        <rect x="105" y="135" width="10" height="35" fill="#3f2613"/>
+    </svg>
+</div>
+
+<h3 id="posture-text">Horse posture: Running</h3>
+
+<div id="maps-wrapper">
+    <div class="map-container">
+        <div class="map-title">Latest Normal Position (water_flag = 0)</div>
+        <div id="mapNormal" class="map-box"></div>
+    </div>
+    <div class="map-container">
+        <div class="map-title">Latest Water Source Position (water_flag = 1)</div>
+        <div id="mapWater" class="map-box"></div>
+    </div>
+</div>
+
+<div id="data-box">
+    <h3>Latest Data</h3>
+    <div id="latest"></div>
+</div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+<script>
+const API_URL = "https://36my08rvv4.execute-api.us-east-1.amazonaws.com/horse-data";
+
+const mapNormal = L.map('mapNormal').setView([39.95, -75.19], 12);
+const mapWater  = L.map('mapWater').setView([39.95, -75.19], 12);
+
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(mapNormal);
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(mapWater);
+
+let normalMarker = null;
+let waterMarker  = null;
+
+const horse       = document.getElementById("horse");
+const postureText = document.getElementById("posture-text");
+
+function applyHorsePosture(pitch) {
+    horse.classList.remove("tilt-left", "tilt-right", "tilt-front", "tilt-hind", "run");
+
+    if (pitch === 1) {
+        postureText.textContent = "Horse posture: Leaning Left";
+        horse.classList.add("tilt-left");
+
+    } else if (pitch === 2) {
+        postureText.textContent = "Horse posture: Leaning Right";
+        horse.classList.add("tilt-right");
+
+    } else if (pitch === 3) {
+        postureText.textContent = "Horse posture: Leaning Forward";
+        horse.classList.add("tilt-front");
+
+    } else if (pitch === 4) {
+        postureText.textContent = "Horse posture: Leaning Backward";
+        horse.classList.add("tilt-hind");
+
+    } else {
+        postureText.textContent = "Horse posture: Running";
+        horse.classList.add("run");
+    }
+}
+
+async function loadData() {
+    try {
+        const resp = await fetch(API_URL);
+        const raw  = await resp.json();
+
+        if (!Array.isArray(raw) || raw.length === 0) return;
+
+        const items = raw.map(d => d.payload ? d.payload : d);
+        const newest = items[0];
+
+        applyHorsePosture(newest.pitch);
+
+        document.getElementById("latest").innerHTML = `
+            <b>Temperature:</b> ${(newest.temperature / 100).toFixed(2)} °C<br>
+            <b>Moisture:</b> ${(newest.moisture / 100).toFixed(2)} %<br>
+            <b>Pitch:</b> ${newest.pitch}<br>
+            <b>Water Flag:</b> ${newest.water_flag}<br>
+            <b>Water Time:</b> ${newest.water_time} sec<br>
+            <b>Latitude:</b> ${(newest.latitude  / 1_000_000).toFixed(6)}<br>
+            <b>Longitude:</b> ${(newest.longitude / 1_000_000).toFixed(6)}<br>
+            <b>Time:</b> ${new Date(newest.aws_timestamp).toLocaleString()}
+        `;
+
+        const latestNormal = items.find(it => it.water_flag === 0);
+        const latestWater  = items.find(it => it.water_flag === 1);
+
+        if (latestNormal) {
+            const latN = latestNormal.latitude  / 1_000_000;
+            const lonN = latestNormal.longitude / 1_000_000;
+            if (!normalMarker) normalMarker = L.marker([latN, lonN]).addTo(mapNormal);
+            else normalMarker.setLatLng([latN, lonN]);
+            mapNormal.setView([latN, lonN], 13);
+        }
+
+        if (latestWater) {
+            const latW = latestWater.latitude  / 1_000_000;
+            const lonW = latestWater.longitude / 1_000_000;
+            if (!waterMarker) {
+                waterMarker = L.marker([latW, lonW]).addTo(mapWater);
+                waterMarker.bindPopup("Water source");
+            } else {
+                waterMarker.setLatLng([latW, lonW]);
+            }
+            mapWater.setView([latW, lonW], 13);
+        }
+
+    } catch (e) {
+        console.error("Error loading data:", e);
+    }
+}
+
+loadData();
+setInterval(loadData, 5000);
+</script>
+
+</body>
+</html>
