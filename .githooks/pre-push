@@ -1,0 +1,3 @@
+#!/bin/sh
+echo "=== pre-push hook SMOKE TEST ==="
+exit 1
