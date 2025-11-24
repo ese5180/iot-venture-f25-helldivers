@@ -1,4 +1,4 @@
-name: Twister CI
+name: twister-tests
 
 on:
   push:
@@ -7,7 +7,7 @@ on:
     branches: [ main ]
 
 jobs:
-  twister-tests:
+  twister:
     runs-on: ubuntu-latest
 
     steps:
@@ -18,41 +18,43 @@ jobs:
         run: |
           sudo rm -rf /usr/share/dotnet
           sudo rm -rf /opt/ghc
-          sudo rm -rf /usr/local/lib/android
+          sudo rm -rf "/usr/local/share/boost"
           df -h
 
       - name: Run Twister tests in Docker
         run: |
           docker run --rm \
-            -v "${GITHUB_WORKSPACE}:/workdir" \
+            -v "${{ github.workspace }}:/workdir" \
             -w /workdir \
             ghcr.io/zephyrproject-rtos/zephyr-build:main \
             bash -lc '
-              set -e
+              set -eux
+
+              # 一定要在 /workdir 里操作，这个目录就是你的 repo，具备写权限
+              cd /workdir
+              echo "PWD is $(pwd)"
+              ls
 
               echo "=== Clone Zephyr repo for Twister ==="
-              git clone --depth 1 https://github.com/zephyrproject-rtos/zephyr.git
-              cd zephyr
+              git clone --depth 1 https://github.com/zephyrproject-rtos/zephyr.git zephyr
 
-              echo "=== Install Python deps ==="
-              pip3 install -r scripts/requirements.txt
+              export ZEPHYR_BASE=/workdir/zephyr
 
-              export ZEPHYR_BASE=$PWD
-              echo "ZEPHYR_BASE=$ZEPHYR_BASE"
+              # 确保 Twister 依赖就绪（一般镜像里都有，这里保险起见）
+              pip3 install -r zephyr/scripts/requirements-base.txt
 
-              echo "=== Run Twister on aws_iot_sensor/tests/balance ==="
-              python3 scripts/twister \
-                -p native_sim \
-                --inline-logs -v \
-                -T /workdir/aws_iot_sensor/tests/balance \
-                --report-junit /workdir/twister-report.xml \
-                --report-json  /workdir/twister-report.json
+              mkdir -p aws_iot_sensor/twister-out
+
+              west twister \
+                -p qemu_cortex_m3 \
+                -T aws_iot_sensor/tests/balance \
+                --inline-logs \
+                --report-junit aws_iot_sensor/twister-out/twister.xml \
+                --report-json  aws_iot_sensor/twister-out/twister.json
             '
 
       - name: Upload Twister artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: twister-reports
-          path: |
-            twister-report.xml
-            twister-report.json
+          name: twister-out
+          path: aws_iot_sensor/twister-out
