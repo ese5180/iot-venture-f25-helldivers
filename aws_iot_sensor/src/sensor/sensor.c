@@ -229,8 +229,8 @@ static void scheduler_thread(void *p1, void *p2, void *p3)
 /* ====================== 线程创建 ====================== */
 
 K_THREAD_DEFINE(bme280_thread_id, 2048, bme280_thread, NULL, NULL, NULL, 5, 0, 0);
-K_THREAD_DEFINE(bno055_thread_id, 2048, bno055_thread, NULL, NULL, NULL, 3, 0, 0);
-K_THREAD_DEFINE(scheduler_thread_id, 1024, scheduler_thread, NULL, NULL, NULL, 2, 0, 0);
+K_THREAD_DEFINE(bno055_thread_id, 2048, bno055_thread, NULL, NULL, NULL, 4, 0, 0);
+K_THREAD_DEFINE(scheduler_thread_id, 1024, scheduler_thread, NULL, NULL, NULL, 3, 0, 0);
 
 /* ====================== 对外接口 ====================== */
 

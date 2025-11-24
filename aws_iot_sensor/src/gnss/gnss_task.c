@@ -45,7 +45,7 @@ LOG_MODULE_REGISTER(gnss_task, LOG_LEVEL_INF);
 
 /* GNSS 任务线程配置 */
 #define GNSS_TASK_STACK_SIZE         4096
-#define GNSS_TASK_PRIORITY           5
+#define GNSS_TASK_PRIORITY           2
 
 /* ====================== GPIO / 硬件定义 ====================== */
 /* 这里假设使用 nRF91 DK 的 LED0/LED1 作为指示灯，SW0 作为 Button1 */
