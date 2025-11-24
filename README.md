@@ -303,3 +303,14 @@ https://devzone.nordicsemi.com/f/nordic-q-a/125395/rf9151-dk-connects-to-nrf-clo
 https://docs.google.com/spreadsheets/d/1zmwnLL9aSm3jkdN8P-3BPP1QO4xDeBbsMbr3Et-MiHA/edit?gid=2020998309#gid=2020998309
 
 
+### 3.10 Fleet Management
+All the code is in file 'aws_iot'.
+
+1) OTA firmware updates with version info
+
+To demonstrate OTA firmware updates, I used the nRF91 AWS IoT FOTA flow.
+Initially the device was running firmware version 0.0.1+bc143e and reported this app_version field in its AWS IoT device shadow. I then uploaded a new signed image zephyr.signed.bin to my S3 bucket ese518-demo-bucket and created an AWS IoT job called horse_data_fota targeting the thing device_horse. In the serial log the device receives the job document and the Zephyr downloader starts fetching the file from S3, showing messages like “Connecting to 52.217.70.96” and “Downloaded xxxx/249950 bytes (…%)”. After the download and verification complete, the device reboots into the new firmware. The updated firmware reports a new version string in the shadow, so we can see remotely that the OTA update succeeded and which firmware version is currently installed on the device.
+
+2) Core dump
+
+To demonstrate core dump collection, I integrated the Memfault SDK in the nRF91 firmware and enabled coredump storage and upload. I then intentionally triggered a crash using the Memfault test fault, so that the device saves a coredump to flash. On the next boot, the Memfault SDK detects the stored coredump and uploads it to Memfault’s cloud. In the Memfault web dashboard, under Issues, I can see entries such as “Mem Fault at Unknown Location” and “Assert at Unknown Location” for my firmware versions, each with one or more traces. These issues confirm that the device successfully captured the crash state and forwarded the core dump to Memfault for remote debugging.
