@@ -299,11 +299,11 @@ https://devzone.nordicsemi.com/f/nordic-q-a/125395/rf9151-dk-connects-to-nrf-clo
 
 ## 3.6 Concept Refinement
 
-### IoT Venture BOM and Cost Model
+## IoT Venture BOM and Cost Model
 https://docs.google.com/spreadsheets/d/1zmwnLL9aSm3jkdN8P-3BPP1QO4xDeBbsMbr3Et-MiHA/edit?gid=2020998309#gid=2020998309
 
 
-### 3.10 Fleet Management
+## 3.10 Fleet Management
 All the code is in file 'aws_iot'.
 
 1) OTA firmware updates with version info
@@ -314,3 +314,21 @@ Initially the device was running firmware version 0.0.1+bc143e and reported this
 2) Core dump
 
 To demonstrate core dump collection, I integrated the Memfault SDK in the nRF91 firmware and enabled coredump storage and upload. I then intentionally triggered a crash using the Memfault test fault, so that the device saves a coredump to flash. On the next boot, the Memfault SDK detects the stored coredump and uploads it to Memfault’s cloud. In the Memfault web dashboard, under Issues, I can see entries such as “Mem Fault at Unknown Location” and “Assert at Unknown Location” for my firmware versions, each with one or more traces. These issues confirm that the device successfully captured the crash state and forwarded the core dump to Memfault for remote debugging.
+
+3) Forward at least one piece of critical device information to Memfault’s cloud
+
+In addition to crash reports and core dumps, we forward a critical runtime status from each device to Memfault: the GNSS status. We define a custom Memfault heartbeat metric called gnss_status, where 0 means GNSS off, 1 means searching and 2 means a valid position fix. The firmware updates this metric in the GNSS event callback whenever the modem state changes, and the Memfault SDK includes this field in every heartbeat upload. As a result, in the Memfault dashboard we can see, for each nRF9151 DK, whether the horse clip currently has a GPS fix or is stuck searching under poor sky conditions. For our application, this GNSS lock status is critical device information because it directly determines whether the “find my horse” and geofencing functions are reliable at that moment.
+
+## 3.11 MVP Demo
+
+At least two devices showing the functionality below – We have two nRF9151 DKs connected to our backend. In Memfault’s Devices view both boards appear with their IMEI and current software version (0.0.1+bc143e and 0.0.1+990c81), demonstrating that we can manage a small fleet of devices.
+
+Transmitting key data from the devices to a cloud server – Each device connects to AWS IoT Core and periodically publishes a JSON shadow document containing app_version, uptime, horse balance state, and BME280 environment data (temperature, humidity, pressure). This data can be viewed live in the AWS IoT console.
+
+Demonstrating over-the-air firmware updates with signed images – Firmware is built as a signed MCUboot image (zephyr.signed.bin) and stored in an S3 bucket. We create an AWS IoT Job (for example horse_data_fota) using fw_update_job.json. The device downloads the image, reboots, and reports a new app_version in the shadow and in Memfault’s device list, confirming a successful signed FOTA update.
+
+Showing the use of Git Hooks / CI pipelines to run unit tests – The balance-detection logic has unit tests under tests/balance. A Git pre-commit hook runs west twister -T tests/balance -p qemu_cortex_m3 --inline-logs -v on every commit and aborts the commit if any test fails. This demonstrates using our Git workflow to automatically run unit tests before code is committed.
+
+Leveraging Memfault for managing devices – The firmware integrates the Memfault SDK to capture crashes and coredumps. When we trigger a test fault, the device uploads the trace to Memfault. In the Memfault Issues view we see entries such as “Mem Fault at Unknown Location” and “Assert at Unknown Location” tied to specific firmware versions and devices, allowing remote debugging and fleet-wide visibility.
+
+Demonstrating functionality and integration of peripheral devices – The application reads the BNO055 IMU to compute horse balance states (normal, left/right imbalance, front/hind imbalance) and reads the BME280 for temperature, humidity, and pressure. These values are logged locally and included in the JSON payload sent to AWS IoT, showing that both peripherals are correctly integrated into the system.
