@@ -11,13 +11,13 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      # 1. 把你的项目 checkout 到子目录 project/
+      # 1. 把仓库 checkout 到子目录 project/
       - name: Checkout repo
         uses: actions/checkout@v4
         with:
           path: project
 
-      # 2. 安装编译 Zephyr + native_sim 所需的一些包
+      # 2. 安装构建 Zephyr + native_sim 所需依赖
       - name: Install build dependencies
         run: |
           sudo apt-get update
@@ -27,23 +27,24 @@ jobs:
             xz-utils file make gcc g++ \
             libsdl2-dev
 
-      # 3. 初始化一个 Zephyr workspace（只为了跑 Twister）
+      # 3. 初始化 Zephyr workspace（专门给 CI / Twister 用）
       - name: Init Zephyr workspace
         run: |
           pip3 install --user west
           echo "$HOME/.local/bin" >> $GITHUB_PATH
 
-          # 在仓库根目录下创建 zephyrproject/
+          # 在 CI 的工作目录下创建 zephyrproject/
           west init -m https://github.com/zephyrproject-rtos/zephyr --mr v4.0.0 zephyrproject
           cd zephyrproject
           west update --narrow
           pip3 install -r zephyr/scripts/requirements.txt
 
-      # 4. 跑 Twister，指向你 aws_iot_sensor 里的 balance unit test
+      # 4. 在 Zephyr workspace 里跑 Twister，测试你的 horse balance 单元测试
       - name: Run Twister horse balance tests
         working-directory: zephyrproject
         env:
           ZEPHYR_BASE: ${{ github.workspace }}/zephyrproject/zephyr
+          ZEPHYR_TOOLCHAIN_VARIANT: host
         run: |
           python3 zephyr/scripts/twister \
             -p native_sim/native/64 \
@@ -51,11 +52,10 @@ jobs:
             --outdir $GITHUB_WORKSPACE/twister-out-ci \
             --inline-logs
 
-      # 5. 把 Twister 输出作为 artifact 上传，方便助教下载看
+      # 5. 上传 Twister 输出结果，助教可以下载查看
       - name: Upload Twister artifacts
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: twister-out
           path: twister-out-ci
-
