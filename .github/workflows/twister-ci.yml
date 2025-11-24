@@ -11,34 +11,48 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      # 1. 拉取当前仓库代码
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      # 2. 适当清理一下磁盘空间（GitHub runner 空间比较紧）
       - name: Free disk space
         run: |
-          sudo rm -rf /usr/local/lib/android || true
-          sudo rm -rf /opt/ghc || true
-          sudo rm -rf /usr/share/dotnet || true
+          sudo rm -rf /usr/share/dotnet
+          sudo rm -rf /opt/ghc
+          sudo rm -rf /usr/local/lib/android
+          df -h
 
-      # 3. 用 Zephyr 官方 Docker 镜像跑 Twister
       - name: Run Twister tests in Docker
         run: |
           docker run --rm \
-            -v "${{ github.workspace }}:/workdir" \
-            -w /workdir/aws_iot_sensor \
+            -v "${GITHUB_WORKSPACE}:/workdir" \
+            -w /workdir \
             ghcr.io/zephyrproject-rtos/zephyr-build:main \
             bash -lc '
-              echo "ZEPHYR_BASE = $ZEPHYR_BASE"
-              echo "Running west twister on tests/balance..."
-              west twister -p qemu_cortex_m3 -T tests/balance --inline-logs -v
+              set -e
+
+              echo "=== Clone Zephyr repo for Twister ==="
+              git clone --depth 1 https://github.com/zephyrproject-rtos/zephyr.git
+              cd zephyr
+
+              echo "=== Install Python deps ==="
+              pip3 install -r scripts/requirements.txt
+
+              export ZEPHYR_BASE=$PWD
+              echo "ZEPHYR_BASE=$ZEPHYR_BASE"
+
+              echo "=== Run Twister on aws_iot_sensor/tests/balance ==="
+              python3 scripts/twister \
+                -p native_sim \
+                --inline-logs -v \
+                -T /workdir/aws_iot_sensor/tests/balance \
+                --report-junit /workdir/twister-report.xml \
+                --report-json  /workdir/twister-report.json
             '
 
-      # 4. 上传 Twister 生成的报告 / build 结果
       - name: Upload Twister artifacts
         uses: actions/upload-artifact@v4
-        if: always()
         with:
-          name: twister-out
-          path: aws_iot_sensor/twister-out/
+          name: twister-reports
+          path: |
+            twister-report.xml
+            twister-report.json
