@@ -1,3 +1,23 @@
 #!/bin/sh
-echo "=== pre-push hook SMOKE TEST ==="
-exit 1
+
+# 仓库根目录
+REPO_ROOT="$(git rev-parse --show-toplevel)"
+APP_DIR="$REPO_ROOT/aws_iot_sensor"
+
+cd "$APP_DIR" || {
+  echo "pre-push: failed to cd into $APP_DIR"
+  exit 1
+}
+
+echo "pre-push: running balance unit tests with west twister..."
+
+west twister -p qemu_cortex_m3 -T tests/balance --inline-logs -v
+RESULT=$?
+
+if [ $RESULT -ne 0 ]; then
+  echo "pre-push: unit tests FAILED, blocking push."
+  exit $RESULT
+fi
+
+echo "pre-push: unit tests passed, allowing push."
+exit 0
