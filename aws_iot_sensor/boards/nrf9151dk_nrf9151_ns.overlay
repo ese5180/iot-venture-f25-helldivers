@@ -1,0 +1,47 @@
+/*
+ * Copyright (c) 2024 Nordic Semiconductor ASA
+ *
+ * SPDX-License-Identifier: LicenseRef-Nordic-5-Clause
+ */
+
+/* Enable uart1 for tracing. */
+&uart1 {
+	status = "okay";
+	current-speed = < 1000000 >;
+	hw-flow-control;
+};
+
+/ {
+	chosen {
+		nordic,modem-trace-uart = &uart1;
+	};
+};
+
+/ {
+    zephyr,user {
+        /* GPIO_ACTIVE_LOW：软件写 1 = 有效，硬件脚被拉低 */
+        bno_pwr_gpios = <&gpio0 2 GPIO_ACTIVE_LOW>;
+    };
+};
+
+
+&i2c2 {
+    status = "okay";
+
+    bno055: bno055@28 {
+        compatible = "bosch,bno055";
+        reg = <0x28>;
+        label = "BNO055";
+        status = "okay";
+    };
+
+    bme280: bme280@77 {
+        compatible = "bosch,bme280";
+        reg = <0x77>;
+        label = "BME280";
+        status = "okay";
+    };
+};
+
+
+

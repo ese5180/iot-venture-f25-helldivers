@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Horse Realtime GPS Dashboard</title>
+
+<!-- Leaflet CSS -->
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+
+<style>
+    body {
+        font-family: Arial, sans-serif;
+        background: #f7f7f7;
+        padding: 20px;
+        text-align: center;
+        margin: 0;
+    }
+
+    h1, h2, h3 {
+        margin: 0.3rem 0;
+    }
+
+    /* 顶部马动画区域 */
+    #horse-box {
+        width: 220px;
+        margin: 0 auto 5px auto;
+        height: 220px;
+    }
+
+    #horse {
+        width: 220px;
+        height: 220px;
+        transform-origin: 110px 140px; /* 旋转中心（大概在马身体中部） */
+        transition: transform 0.4s ease;
+    }
+
+    /* 眼睛通用 class */
+    .eye {
+        transform-origin: center;
+        animation: blink 4s infinite;
+    }
+
+    /* 眨眼动画 */
+    @keyframes blink {
+        0%, 88%, 100% { transform: scaleY(1); }
+        90%           { transform: scaleY(0.15); }
+        92%           { transform: scaleY(1); }
+    }
+
+    /* 跑步上下跳动 */
+    @keyframes run-bounce {
+        0%   { transform: translateY(0px); }
+        50%  { transform: translateY(-10px); }
+        100% { transform: translateY(0px); }
+    }
+
+    /* 跑步时眼睛轻微抖动 */
+    @keyframes eye-jitter {
+        0%, 100% { transform: translateX(0px); }
+        50%      { transform: translateX(1.2px); }
+    }
+
+    .run {
+        animation: run-bounce 0.5s infinite ease-in-out;
+    }
+
+    .run .eye {
+        animation: blink 4s infinite, eye-jitter 0.25s infinite;
+    }
+
+    /* 左右倾斜 */
+    .tilt-left {
+        transform: rotate(-18deg);
+    }
+    .tilt-right {
+        transform: rotate(18deg);
+    }
+
+    /* 地图区域布局：大屏左右并排，小屏上下堆叠 */
+    #maps-wrapper {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 16px;
+        margin-top: 16px;
+        justify-content: center;
+    }
+
+    .map-container {
+        flex: 1 1 420px;
+        min-width: 320px;
+        max-width: 700px;
+    }
+
+    .map-title {
+        font-weight: bold;
+        margin-bottom: 6px;
+    }
+
+    .map-box {
+        height: 360px;
+        width: 100%;
+        border-radius: 10px;
+        box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+    }
+
+    /* 最新数据卡片 */
+    #data-box {
+        background: white;
+        padding: 15px;
+        border-radius: 10px;
+        width: 420px;
+        margin: 20px auto;
+        text-align: left;
+        box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+        font-size: 0.95rem;
+    }
+
+    #data-box b {
+        font-weight: 600;
+    }
+
+    @media (max-width: 600px) {
+        #data-box {
+            width: 90%;
+        }
+    }
+</style>
+</head>
+<body>
+
+<h2>🐴 Horse Realtime GPS Dashboard</h2>
+
+<!-- SVG 卡通马 -->
+<div id="horse-box">
+    <svg id="horse" viewBox="0 0 200 200">
+        <!-- 地面椭圆 -->
+        <ellipse cx="100" cy="155" rx="55" ry="24" fill="#8b4513"/>
+        <!-- 身体 -->
+        <rect x="80" y="110" width="40" height="55" rx="8" fill="#5c3317"/>
+        <!-- 头部 -->
+        <circle cx="100" cy="80" r="45" fill="#a0522d"/>
+
+        <!-- 左眼 -->
+        <g class="eye">
+            <circle cx="85" cy="70" r="8" fill="white"/>
+            <circle cx="86" cy="70" r="4" fill="black"/>
+        </g>
+        <!-- 右眼 -->
+        <g class="eye">
+            <circle cx="115" cy="70" r="8" fill="white"/>
+            <circle cx="116" cy="70" r="4" fill="black"/>
+        </g>
+
+        <!-- 耳朵/鬃毛 -->
+        <path d="M80 50 Q65 20 95 30" stroke="#5c3317" stroke-width="8" fill="none" stroke-linecap="round"/>
+
+        <!-- 前腿 -->
+        <rect x="85" y="135" width="10" height="35" fill="#3f2613"/>
+        <rect x="105" y="135" width="10" height="35" fill="#3f2613"/>
+    </svg>
+</div>
+
+<h3 id="posture-text">Horse posture: Running</h3>
+
+<!-- 两张地图：左普通位置，右水源位置 -->
+<div id="maps-wrapper">
+    <div class="map-container">
+        <div class="map-title">Latest Normal Position (water_flag = 0)</div>
+        <div id="mapNormal" class="map-box"></div>
+    </div>
+    <div class="map-container">
+        <div class="map-title">Latest Water Source Position (water_flag = 1)</div>
+        <div id="mapWater" class="map-box"></div>
+    </div>
+</div>
+
+<!-- 最新数据 -->
+<div id="data-box">
+    <h3>Latest Data</h3>
+    <div id="latest"></div>
+</div>
+
+<!-- Leaflet JS -->
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+<script>
+const API_URL = "https://36my08rvv4.execute-api.us-east-1.amazonaws.com/horse-data";
+
+// 初始化两张地图
+const mapNormal = L.map('mapNormal').setView([39.95, -75.19], 12);
+const mapWater  = L.map('mapWater').setView([39.95, -75.19], 12);
+
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    maxZoom: 19
+}).addTo(mapNormal);
+
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    maxZoom: 19
+}).addTo(mapWater);
+
+let normalMarker = null;
+let waterMarker  = null;
+
+const horse       = document.getElementById("horse");
+const postureText = document.getElementById("posture-text");
+
+function applyHorsePosture(pitch) {
+    // pitch: 0=正常跑, 1=左倾, 2=右倾
+    horse.classList.remove("tilt-left", "tilt-right", "run");
+
+    if (pitch === 1) {
+        postureText.textContent = "Horse posture: Leaning Left";
+        horse.classList.add("tilt-left");
+    } else if (pitch === 2) {
+        postureText.textContent = "Horse posture: Leaning Right";
+        horse.classList.add("tilt-right");
+    } else {
+        postureText.textContent = "Horse posture: Running";
+        horse.classList.add("run");
+    }
+}
+
+async function loadData() {
+    try {
+        const resp = await fetch(API_URL);
+        const raw  = await resp.json();
+
+        if (!Array.isArray(raw) || raw.length === 0) {
+            console.log("No data from API");
+            return;
+        }
+
+        // 解包 payload
+        const items = raw.map(d => d.payload ? d.payload : d);
+
+        // 最新一条（用于顶部姿态 + info 卡片）
+        const newest = items[0];
+
+        const latNewest = newest.latitude  / 1_000_000;
+        const lonNewest = newest.longitude / 1_000_000;
+
+        // 马的姿态
+        applyHorsePosture(newest.pitch);
+
+        // 最新数据卡片
+        document.getElementById("latest").innerHTML = `
+            <b>Temperature:</b> ${(newest.temperature / 100).toFixed(2)} °C<br>
+            <b>Moisture:</b> ${(newest.moisture / 100).toFixed(2)} %<br>
+            <b>Pitch (state):</b> ${newest.pitch}<br>
+            <b>Water Flag:</b> ${newest.water_flag}<br>
+            <b>Water Time:</b> ${newest.water_time} sec<br>
+            <b>Latitude:</b> ${latNewest.toFixed(6)}<br>
+            <b>Longitude:</b> ${lonNewest.toFixed(6)}<br>
+            <b>Time:</b> ${new Date(newest.aws_timestamp).toLocaleString()}
+        `;
+
+        // 找到“最新”的 water_flag=0 和 water_flag=1
+        const latestNormal = items.find(it => it.water_flag === 0);
+        const latestWater  = items.find(it => it.water_flag === 1);
+
+        // ===== 普通位置 (water_flag = 0) =====
+        if (latestNormal) {
+            const latN = latestNormal.latitude  / 1_000_000;
+            const lonN = latestNormal.longitude / 1_000_000;
+
+            if (!normalMarker) {
+                normalMarker = L.marker([latN, lonN]).addTo(mapNormal);
+            } else {
+                normalMarker.setLatLng([latN, lonN]);
+            }
+            mapNormal.setView([latN, lonN], 13);
+        }
+
+        // ===== 水源位置 (water_flag = 1) =====
+        if (latestWater) {
+            const latW = latestWater.latitude  / 1_000_000;
+            const lonW = latestWater.longitude / 1_000_000;
+
+            if (!waterMarker) {
+                // 用红色小圆图标
+                const waterIcon = L.icon({
+                    iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-icon.png',
+                    iconSize: [25, 41],
+                    iconAnchor: [12, 41],
+                    popupAnchor: [1, -34],
+                    shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-shadow.png',
+                    shadowSize: [41, 41]
+                });
+                waterMarker = L.marker([latW, lonW], { icon: waterIcon }).addTo(mapWater);
+                waterMarker.bindPopup("Water source (latest water_flag = 1)");
+            } else {
+                waterMarker.setLatLng([latW, lonW]);
+            }
+            mapWater.setView([latW, lonW], 13);
+        }
+
+    } catch (e) {
+        console.error("Error loading data:", e);
+    }
+}
+
+// 初次加载 + 定时刷新
+loadData();
+setInterval(loadData, 5000);
+</script>
+
+</body>
+</html>
