@@ -394,6 +394,58 @@ Demonstrating functionality and integration of peripheral devices – The applic
 
 ## 3.14 Final Report
 
+### Design changes made along the way
 
+We adjusted the FreeRTOS task structure and priorities so that GNSS fixes and LTE-M communication did not block sensor sampling.
 
+We tuned sampling intervals and reduced logging to lower I²C traffic and CPU load.
 
+We introduced MOSFET gating on the I²C lines as a pragmatic way to avoid bus lockups when multiple sensors were active, even though we now see this as a stop-gap rather than a final solution.
+
+On the cloud side, we iterated on the data schema and MQTT topics to make it easier to visualize and extend later.
+
+The dashboard layout was simplified over time based on what we actually needed during debugging and demos, which also informed our ideas for a cleaner future UI.
+
+### What parts of project would consider a success
+
+Several parts of the system worked very well.
+
+On the communication side, LTE-M and AWS cloud integration were a clear success. The device could establish a stable cellular link, periodically upload data, and recover from transient network issues. On the cloud side, AWS IoT Core and MQTT topics were set up to receive, store, and process data, giving us a complete end-to-end pipeline from embedded hardware to cloud infrastructure.
+
+On the sensing side, the core pipeline also worked reliably. We were able to read orientation from the BNO055 IMU and temperature / humidity / pressure from the BME280 over I²C, and our balance algorithm can distinguish normal, left/right and front/hind load patterns in real time. FreeRTOS task management kept these sensor tasks, GNSS, and LTE-M communication running concurrently without blocking, and the power-management scheme allowed long-duration operation on battery.
+
+Finally, we built a simple but clear dashboard for visualizing the data. Even though it was not fully deployed publicly, it demonstrated that the data format and cloud back-end were well structured for user-facing applications.
+
+### What parts of project didn’t go well
+
+There were three main areas that did not go as well as planned.
+
+The first was heart-rate sensing. The optical PPG module available to us was low quality—it already struggled on human subjects and is unlikely to work well on a moving horse with hair and thick skin. It also shared the same I²C bus as the BNO055 and BME280, and adding it created bus contention and timing problems. Our temporary workaround was to gate sensors with MOSFETs so only one is connected at a time, but this doesn’t fundamentally fix bandwidth and signal-integrity issues, so we dropped heart-rate from the MVP.
+
+The second issue was the user interface deployment. We had a working HTML-based dashboard, but it was never hosted on a public endpoint in time, so it could only be accessed locally. This was mainly due to time pressure near the end of the semester and the extra setup needed for cloud-hosted front-end services.
+
+Third, system performance was not always ideal under real network conditions. Under weak LTE-M or poor GNSS conditions, data upload latency and GNSS fix times were sometimes longer than expected, because GNSS and communication share processing resources and our configuration was not fully optimized.
+
+### Change development approach given the finite time and money resources
+
+If we repeated the project, we would be more aggressive about de-risking high-uncertainty parts early and staging features more clearly.
+
+For sensing, we would prototype heart-rate options at the very beginning—trying multiple PPG modules and simple ECG / girth-strap concepts on the bench—and only integrate into the main PCB once one sensor gives clean, repeatable signals under motion. In parallel, we would profile worst-case I²C traffic early and design the bus layout and sampling schedule around those measurements instead of discovering contention late.
+
+For the cloud and UI, we would plan an “early vertical slice”: a minimal dashboard deployed to a public endpoint in the first half of the semester, then refine it incrementally. That way we always have a complete end-to-end demo and avoid last-minute front-end deployment issues.
+
+We would also start earlier field-style tests to measure real LTE-M and GNSS behavior, and then tune task priorities, retry intervals, and logging based on measured performance rather than only lab conditions.
+
+### Change your system design after this development cycle
+
+The overall architecture would stay mostly the same. LTE-M is a good choice for remote barns and pastures, and AWS IoT provides a scalable, industry-standard back-end. The existing IMU and environmental sensors also match our target use case.
+
+However, we would redesign the sensor front-end and heart-rate path. Instead of relying on MOSFETs to time-share a single I²C bus, we would either:
+
+give the IMU its own dedicated I²C bus and put the environmental and heart-rate sensors on a second bus, or
+
+use an I²C multiplexer so each device has a clean, isolated channel.
+
+We would also switch to an equine-appropriate heart-rate sensor, ideally using a different interface (analog front-end, UART, or a separate BLE link) so heart-rate no longer competes for I²C bandwidth. For positioning, a more modular GNSS solution with Assisted-GNSS support would reduce fix times without changing the rest of the architecture.
+
+On the UI side, we would keep the basic dashboard concept but simplify the visualization layer and host it directly in the cloud from the start, matching what end users actually need to see day-to-day.
