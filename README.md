@@ -393,3 +393,4 @@ Demonstrating functionality and integration of peripheral devices – The applic
 ![alt text](images/final.jpg)
 
 ## 3.14 Final Report
+
