@@ -386,3 +386,5 @@ Showing the use of Git Hooks / CI pipelines to run unit tests – The balance-de
 Leveraging Memfault for managing devices – The firmware integrates the Memfault SDK to capture crashes and coredumps. When we trigger a test fault, the device uploads the trace to Memfault. In the Memfault Issues view we see entries such as “Mem Fault at Unknown Location” and “Assert at Unknown Location” tied to specific firmware versions and devices, allowing remote debugging and fleet-wide visibility.
 
 Demonstrating functionality and integration of peripheral devices – The application reads the BNO055 IMU to compute horse balance states (normal, left/right imbalance, front/hind imbalance) and reads the BME280 for temperature, humidity, and pressure. These values are logged locally and included in the JSON payload sent to AWS IoT, showing that both peripherals are correctly integrated into the system.
+
+![alt text](images/final.jpg)
