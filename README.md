@@ -442,10 +442,11 @@ The overall architecture would stay mostly the same. LTE-M is a good choice for 
 
 However, we would redesign the sensor front-end and heart-rate path. Instead of relying on MOSFETs to time-share a single I²C bus, we would either:
 
-give the IMU its own dedicated I²C bus and put the environmental and heart-rate sensors on a second bus, or
+- give the IMU its own dedicated I²C bus and put the environmental and heart-rate sensors on a second bus, or
 
-use an I²C multiplexer so each device has a clean, isolated channel.
+- use an I²C multiplexer so each device has a clean, isolated channel.
 
 We would also switch to an equine-appropriate heart-rate sensor, ideally using a different interface (analog front-end, UART, or a separate BLE link) so heart-rate no longer competes for I²C bandwidth. For positioning, a more modular GNSS solution with Assisted-GNSS support would reduce fix times without changing the rest of the architecture.
 
 On the UI side, we would keep the basic dashboard concept but simplify the visualization layer and host it directly in the cloud from the start, matching what end users actually need to see day-to-day.
+
