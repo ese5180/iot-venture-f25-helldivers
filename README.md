@@ -438,7 +438,7 @@ For the cloud and UI, we would plan an “early vertical slice”: a minimal das
 
 We would also start earlier field-style tests to measure real LTE-M and GNSS behavior, and then tune task priorities, retry intervals, and logging based on measured performance rather than only lab conditions.
 
-### Change your system design after this development cycle
+### Change system design after this development cycle
 
 The overall architecture would stay mostly the same. LTE-M is a good choice for remote barns and pastures, and AWS IoT provides a scalable, industry-standard back-end. The existing IMU and environmental sensors also match our target use case.
 
@@ -452,4 +452,12 @@ We would also switch to an equine-appropriate heart-rate sensor, ideally using a
 
 On the UI side, we would keep the basic dashboard concept but simplify the visualization layer and host it directly in the cloud from the start, matching what end users actually need to see day-to-day.
 
+### Images of final product hardware implementation
 
+
+
+### Video demonstrating
+
+https://drive.google.com/file/d/1hPCtE9E95GH7761vfB--U3-8jLXJnr4Y/view?usp=sharing
+
+Source code for all firmware and software is uploaded into this repository(https://github.com/ese5180/iot-venture-f25-helldivers.git).
