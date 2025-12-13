@@ -389,9 +389,6 @@ Leveraging Memfault for managing devices – The firmware integrates the Memfaul
 
 Demonstrating functionality and integration of peripheral devices – The application reads the BNO055 IMU to compute horse balance states (normal, left/right imbalance, front/hind imbalance) and reads the BME280 for temperature, humidity, and pressure. These values are logged locally and included in the JSON payload sent to AWS IoT, showing that both peripherals are correctly integrated into the system.
 
-
-![alt text](images/final.jpg)
-
 ## 3.14 Final Report
 
 GitHub Website URL: https://ese5180.github.io/iot-venture-f25-helldivers/
@@ -461,4 +458,5 @@ On the UI side, we would keep the basic dashboard concept but simplify the visua
 https://drive.google.com/file/d/1hPCtE9E95GH7761vfB--U3-8jLXJnr4Y/view?usp=sharing
 
 Source code for all firmware and software is uploaded into this repository(https://github.com/ese5180/iot-venture-f25-helldivers.git).
+
 
