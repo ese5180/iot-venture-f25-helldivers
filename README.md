@@ -454,10 +454,11 @@ On the UI side, we would keep the basic dashboard concept but simplify the visua
 
 ### Images of final product hardware implementation
 
-
+![alt text](images/final.jpg)
 
 ### Video demonstrating
 
 https://drive.google.com/file/d/1hPCtE9E95GH7761vfB--U3-8jLXJnr4Y/view?usp=sharing
 
 Source code for all firmware and software is uploaded into this repository(https://github.com/ese5180/iot-venture-f25-helldivers.git).
+
