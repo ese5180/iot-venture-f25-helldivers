@@ -1,5 +1,3 @@
-[![Review Assignment Due Date](https://classroom.github.com/assets/deadline-readme-button-22041afd0340ce965d47ae6ef1cefeee28c7c493a6346c4f15d667ab976d596c.svg)](https://classroom.github.com/a/9GQ6o4cu)
-
 # IoT Venture Pitch
 
 ## ESE5180: IoT Wireless, Security, & Scaling
@@ -458,5 +456,6 @@ On the UI side, we would keep the basic dashboard concept but simplify the visua
 https://drive.google.com/file/d/1hPCtE9E95GH7761vfB--U3-8jLXJnr4Y/view?usp=sharing
 
 Source code for all firmware and software is uploaded into this repository(https://github.com/ese5180/iot-venture-f25-helldivers.git).
+
 
 
